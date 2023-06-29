@@ -4,7 +4,6 @@ __pycache__/
 # Distribution / packaging
 build/
 dist/
-node_modules/
 .pytest_cache/
 
 # PyBuilder
@@ -27,3 +26,10 @@ venv.bak/
 
 # Datasets
 application/fed-learn/data/datasets/*
+
+# Node
+node_modules/
+jspm_packages/
+
+# Compiled TypeScript files
+dist

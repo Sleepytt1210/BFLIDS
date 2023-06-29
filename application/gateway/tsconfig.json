@@ -1,0 +1,17 @@
+{
+   "compilerOptions": {
+       "experimentalDecorators": true,
+       "emitDecoratorMetadata": true,
+       "outDir": "dist",
+       "moduleResolution": "node",
+       "declaration": true,
+       "sourceMap": true,
+       "noImplicitAny": true
+   },
+   "include": [
+       "./src/**/*"
+   ],
+   "exclude": [
+       "./src/**/*.spec.ts"
+   ]
+}
