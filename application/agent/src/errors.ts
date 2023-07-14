@@ -1,7 +1,7 @@
 export enum ErrorCode {
-    BAD_REQUEST = "TR400",
-    ASSET_NOT_FOUND = "TR404",
-    EXISTS = "TR409",
+    BAD_REQUEST = 'TR400',
+    ASSET_NOT_FOUND = 'TR404',
+    EXISTS = 'TR409',
 }
 
 /**

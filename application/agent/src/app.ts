@@ -59,7 +59,7 @@ const main = async () => {
         try {
             await setupConnection();
             isConnected();
-            const data = await readModelByID(contract);
+            const data = await readModelByID(contract, modelId);
             resp.status(OK).json(data);
         } catch (err) {
             console.error(err);

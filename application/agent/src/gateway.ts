@@ -80,10 +80,10 @@ export async function createModel(contract: Contract, id: string, hash: string, 
     console.log('*** Transaction committed successfully');
 }
 
-export async function readModelByID(contract: Contract): Promise<any> {
+export async function readModelByID(contract: Contract, id: string): Promise<any> {
     console.log('\n--> Evaluate Transaction: Readmodel, function returns model attributes');
 
-    const resultBytes = await contract.evaluateTransaction('ReadModel', modelId);
+    const resultBytes = await contract.evaluateTransaction('ReadModel', id);
 
     const resultJson = utf8Decoder.decode(resultBytes);
     const result = JSON.parse(resultJson);
