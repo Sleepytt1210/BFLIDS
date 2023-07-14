@@ -38,3 +38,6 @@ dist
 *.crt
 *.key
 *.pem
+
+# Vscode
+.vscode/
