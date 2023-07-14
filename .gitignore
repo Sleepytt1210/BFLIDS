@@ -41,3 +41,7 @@ dist
 
 # Vscode
 .vscode/
+
+# Hyperledger files
+builders/
+bin/
