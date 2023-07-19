@@ -5,23 +5,23 @@
     "main": "dist/index.js",
     "typings": "dist/index.d.ts",
     "engines": {
-        "node": ">=14"
+        "node": ">=14",
+        "npm": ">=5"
     },
     "scripts": {
         "build": "tsc",
         "build:watch": "tsc -w",
-        "lint": "eslint . --ext .ts",
+        "lint": "tslint -c tslint.json 'src/**/*.ts",
         "prepare": "npm run build",
         "pretest": "npm run lint",
-        "start": "node dist/app.js"
+        "start": "npm run build && node dist/app.js"
     },
     "engineStrict": true,
     "author": "Dylon Wong",
     "license": "Apache-2.0",
     "devDependencies": {
-        "@tsconfig/node18": "^18.2.0",
         "@types/express": "^4.17.17",
-        "@types/node": "^18.16.18",
+        "@types/node": "^18.16.1",
         "@typescript-eslint/eslint-plugin": "^5.60.1",
         "@typescript-eslint/parser": "^5.60.1",
         "eslint": "^8.43.0",
