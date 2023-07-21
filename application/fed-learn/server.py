@@ -16,6 +16,7 @@ def client_fn(cid: str):
     # Start client
     print(f"Client connecting to server {cfg.S_ADDR}")
     client = BFLClient(cid, model, x_train, y_train, x_test, y_test)
+    return client
 
 strategy = BFedAvg(
     save_path=SAVE_DIR,
