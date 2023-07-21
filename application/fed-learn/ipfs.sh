@@ -10,10 +10,30 @@ fi
 
 function setup() {
 
-    echo "Setting up IPFS for $ORG"
+
+    if [[ $1 ]]; then
+        ORG="org${1}"
+        SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+        echo "Setting up IPFS for $ORG" && IPFS_PATH=${SCRIPT_DIR}/../../ipfs-conf/${ORG}.example.com
+    fi
 
     if [[ ! -d "$IPFS_PATH" ]]; then
         echo "Initializing IPFS at $IPFS_PATH" && mkdir $IPFS_PATH && cp ${PWD}/../../ipfs-conf/swarm.key "${IPFS_PATH}" && ipfs init
+    fi
+
+    OFFSET=$(( x=$1-1, 1000*x ))
+    API_PORT=$(( $BASE_API_PORT + $OFFSET ))
+
+    if [[ -z "$IPFS_GATEWAY_PORT" ]]; then
+        IPFS_GATEWAY_PORT=$(( $BASE_GATEWAY_PORT + $OFFSET ))
+    fi
+
+    if [[ -z "$IPFS_API_PORT" ]]; then
+        IPFS_API_PORT=$(( $BASE_API_PORT + $OFFSET ))
+    fi
+
+    if [[ -z "$IPFS_SWARM_PORT" ]]; then
+        IPFS_SWARM_PORT=$(( $BASE_SWARM_PORT + $OFFSET/1000 ))
     fi
 
     ipfs bootstrap rm --all
@@ -44,9 +64,9 @@ function println() {
 
 
 if [[ "$1" == "setup" ]]; then
-  setup
+    setup $2
 elif [[ "$1" == "connect" ]]; then
-  ipfs_target="${2}";
-  [[ -z "${ipfs_target}" ]] && echo "IPFS connection target is not set!" && printHelp && exit;
-  connect "${ipfs_target}";
+    ipfs_target="${2}";
+    [[ -z "${ipfs_target}" ]] && echo "IPFS connection target is not set!" && printHelp && exit;
+    connect "${ipfs_target}";
 fi
