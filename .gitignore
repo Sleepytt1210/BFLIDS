@@ -39,9 +39,12 @@ dist
 *.key
 *.pem
 
-# Vscode
+# VScode
 .vscode/
 
 # Hyperledger files
 builders/
 bin/
+
+# IPFS
+ipfs-conf/*
