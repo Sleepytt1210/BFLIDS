@@ -18,11 +18,18 @@ def client_fn(cid: str):
     client = BFLClient(cid, model, x_train, y_train, x_test, y_test)
     return client
 
+def fit_config_fn(server_round: int):
+    config = {
+        'server_round': server_round,
+    }
+    return config
+
 strategy = BFedAvg(
     save_path=SAVE_DIR,
     min_fit_clients=cfg.NUM_CLIENTS,
     min_evaluate_clients=cfg.NUM_CLIENTS,
-    min_available_clients=cfg.NUM_CLIENTS
+    min_available_clients=cfg.NUM_CLIENTS,
+    on_fit_config_fn=fit_config_fn
 )
 
 if __name__ == "__main__":

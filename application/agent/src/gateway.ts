@@ -63,8 +63,8 @@ export async function getAllCheckpoints(contract: Contract): Promise<void> {
 /**
  * Submit a transaction synchronously, blocking until it has been committed to the ledger.
  */
-export async function createCheckpoint(contract: Contract, id: string, hash: string, url: string, owner: string, algorithm: string, hAccuracy: string, cAccuracy: string, loss: string, round: string): Promise<void> {
-    console.log('\n--> Submit Transaction: CreateCheckpoint, creates new model with ID, Hash, URL, Owner, Algorithm, Highest Accuracy, Current Accuracy, Loss and Round arguments');
+export async function createCheckpoint(contract: Contract, id: string, hash: string, url: string, owner: string, algorithm: string, cAccuracy: string, loss: string, round: string): Promise<void> {
+    console.log('\n--> Submit Transaction: CreateCheckpoint, creates new model with ID, Hash, URL, Owner, Algorithm, Current Accuracy, Loss and Round arguments');
 
     // const result = await contract.evaluateTransaction('CreateCheckpoint',
     //     id,
@@ -72,7 +72,6 @@ export async function createCheckpoint(contract: Contract, id: string, hash: str
     //     url,
     //     owner,
     //     algorithm,
-    //     hAccuracy,
     //     cAccuracy,
     //     loss,
     //     round
@@ -87,7 +86,6 @@ export async function createCheckpoint(contract: Contract, id: string, hash: str
         url,
         owner,
         algorithm,
-        hAccuracy,
         cAccuracy,
         loss,
         round

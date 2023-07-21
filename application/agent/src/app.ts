@@ -23,7 +23,7 @@ const main = async () => {
             const {gateway, network, contract} = await setupConnection(channelName, chaincodeName, contractName);
             isConnected(gateway, network, contract);
             console.log("Gateway connection is setup.")
-            await createCheckpoint(contract, checkpointData.id, checkpointData.hash, checkpointData.url, checkpointData.owner, checkpointData.algorithm, checkpointData.hAccuracy, checkpointData.cAccuracy, checkpointData.loss, checkpointData.round);
+            await createCheckpoint(contract, checkpointData.id, checkpointData.hash, checkpointData.url, checkpointData.owner, checkpointData.algorithm, checkpointData.cAccuracy, checkpointData.loss, checkpointData.round);
             return resp.status(ACCEPTED).json({
                 status: getReasonPhrase(ACCEPTED),
                 modelID: checkpointData.id,

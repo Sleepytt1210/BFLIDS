@@ -4,11 +4,19 @@ import models.net as net
 from data.loader import load_data
 from utils.config import NUM_CLIENTS, CID, S_ADDR
 from subprocess import Popen
+from utils.saver import hash_params
+from utils.requestor import post_model, query_model
+
 import os
 import os.path as path
 import utils.config as cfg
 import ipfsApi
 import time
+
+
+CHANNEL_NAME='fedlearn'
+CHAINCODE_NAME='fedLearn'
+CONTRACT_NAME='LocalLearningContract'
 
 class BFLClient(fl.client.NumPyClient):
 
@@ -23,7 +31,7 @@ class BFLClient(fl.client.NumPyClient):
         self.gateway_ps: Popen = None
         self.ipfs_daemon: Popen = None
         self.ipfs_connection: Popen = None
-        self.ipfs_id = None
+        self.ipfs_api: ipfsApi.Client = None
         self.__setup()
 
     def get_parameters(self, config):
@@ -33,7 +41,36 @@ class BFLClient(fl.client.NumPyClient):
         self.model.set_weights(parameters)
         with tf.device('/device:gpu:0'):
             self.model.fit(self.x_train, self.y_train, epochs=1, batch_size=32)
-        return self.model.get_weights(), len(self.x_train), {}
+
+        loss, x_test_count, accuracy_dict = self.evaluate(parameters, config)
+        
+        # Post local model to IPFS
+        server_round = config["server_round"]
+        print(f"[Client {self.cid}]: Uploading model for server round {server_round}")
+        params = self.model.get_weights()
+        hash = hash_params(params)
+        id = f"model_r{server_round}_{self.cid}_{hash}"
+
+        ipfs_cid = self.ipfs_api.add_pyobj(params)
+        resource_url = f"http://{self.env_vars['IPFS_HOST']}:{self.env_vars['IPFS_GATEWAY_PORT']}/ipfs/{ipfs_cid}"
+
+        owner = self.env_vars['PEER_HOST_ALIAS']
+        post_model(
+            id=id,
+            hash=hash,
+            url=resource_url,
+            owner=owner,
+            round=server_round,
+            algorithm="BiLSTM",
+            loss=loss,
+            accuracy=accuracy_dict['accuracy'],
+            channel_name=CHANNEL_NAME,
+            chaincode_name=CHAINCODE_NAME,
+            contract_name=CONTRACT_NAME,
+            client=f"Client {self.cid}"
+        )
+
+        return params, len(self.x_train), {}
 
     def evaluate(self, parameters, config):
         self.model.set_weights(parameters)
@@ -54,12 +91,12 @@ class BFLClient(fl.client.NumPyClient):
     def __setup(self):
         self.terminate()
 
-        env_vars = self.__setup_env()
+        self.env_vars = self.__setup_env()
 
         print(f"[CLIENT {self.cid}]: Starting blockchain gateway")
         self.gateway_ps = Popen(
             ['npm', 'run', 'start'], 
-            env=env_vars,
+            env=self.env_vars,
             cwd=os.path.join(os.curdir, '..', 'agent')
         )
 
@@ -68,16 +105,16 @@ class BFLClient(fl.client.NumPyClient):
         print(f"[CLIENT {self.cid}]: Starting IPFS daemon")
         self.ipfs_daemon = Popen(
             ['ipfs.sh', 'setup'],
-            env=env_vars,
+            env=self.env_vars,
         )
 
-        api = ipfsApi.Client(env_vars['IPFS_HOST'], env_vars["IPFS_API_PORT"])
-        self.ipfs_id = api.id()
+        self.ipfs_api = ipfsApi.Client(self.env_vars['IPFS_HOST'], self.env_vars["IPFS_API_PORT"])
+        ipfs_id = self.ipfs_api.id()
         
-        s_target = env_vars["IPFS_SWARM_TARGET"]
-        if self.ipfs_id['Addresses'][0] != s_target:
+        s_target = self.env_vars["IPFS_SWARM_TARGET"]
+        if ipfs_id['Addresses'][0] != s_target:
             print(f"[CLIENT {self.cid}]: Connecting to {s_target}")
-            api.swarm_connect(env_vars["IPFS_SWARM_TARGET"])
+            self.ipfs_api.swarm_connect(self.env_vars["IPFS_SWARM_TARGET"])
 
     def __setup_env(self):
         

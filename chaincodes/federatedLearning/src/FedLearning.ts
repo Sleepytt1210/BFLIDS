@@ -36,12 +36,15 @@ export class GlobalLearningContract extends Contract {
     }
 
     @Transaction()
-    public async CreateCheckpoint(ctx: Context, id: string, hash: string, url: string, owner: string, algorithm: string, hAccuracy: number, cAccuracy: number, cLoss: number, round: number) {
+    public async CreateCheckpoint(ctx: Context, id: string, hash: string, url: string, owner: string, algorithm: string, cAccuracy: number, cLoss: number, round: number) {
         const exists = await this.CheckpointExists(ctx, id);
 
         if(exists) {
             throw new CheckpointExistsError(`The checkpoint ${id} already exists!`)
         }
+
+        const allCheckpoints: Checkpoint[] = JSON.parse(await this.GetAllCheckpoints(ctx))
+        const hAccuracy = allCheckpoints.reduce((max_acc, cur_max) => Math.max(max_acc, cur_max.HighestAccuracy), 0)        
 
         const checkpoint: Checkpoint = {
             ID: id,
@@ -70,12 +73,15 @@ export class GlobalLearningContract extends Contract {
     }
 
     @Transaction()
-    public async UpdateCheckpoint(ctx: Context, id: string, hash: string, url: string, owner: string, algorithm: string, hAccuracy: number, cAccuracy: number, cLoss: number, round: number) {
+    public async UpdateCheckpoint(ctx: Context, id: string, hash: string, url: string, owner: string, algorithm: string, cAccuracy: number, cLoss: number, round: number) {
         const exists = await this.CheckpointExists(ctx, id);
 
         if(!exists) {
             throw new CheckpointNotFoundError(`The checkpoint ${id} does not exist!`)
         }
+
+        const allCheckpoints: Checkpoint[] = JSON.parse(await this.GetAllCheckpoints(ctx))
+        const hAccuracy = allCheckpoints.reduce((max_acc, cur_max) => Math.max(max_acc, cur_max.HighestAccuracy), 0)        
 
         const checkpoint: Checkpoint = {
             ID: id,
@@ -166,12 +172,15 @@ export class LocalLearningContract extends Contract {
     }
 
     @Transaction()
-    public async CreateCheckpoint(ctx: Context, id: string, hash: string, url: string, owner: string, algorithm: string, hAccuracy: number, cAccuracy: number, cLoss: number, round: number) {
+    public async CreateCheckpoint(ctx: Context, id: string, hash: string, url: string, owner: string, algorithm: string, cAccuracy: number, cLoss: number, round: number) {
         const exists = await this.CheckpointExists(ctx, id);
 
         if(exists) {
             throw new CheckpointExistsError(`The checkpoint ${id} already exists!`)
         }
+
+        const allCheckpoints: Checkpoint[] = JSON.parse(await this.GetAllCheckpoints(ctx))
+        const hAccuracy = allCheckpoints.reduce((max_acc, cur_max) => Math.max(max_acc, cur_max.HighestAccuracy), 0)        
 
         const checkpoint: Checkpoint = {
             ID: id,
@@ -200,12 +209,15 @@ export class LocalLearningContract extends Contract {
     }
 
     @Transaction()
-    public async UpdateCheckpoint(ctx: Context, id: string, hash: string, url: string, owner: string, algorithm: string, hAccuracy: number, cAccuracy: number, cLoss: number, round: number) {
+    public async UpdateCheckpoint(ctx: Context, id: string, hash: string, url: string, owner: string, algorithm: string, cAccuracy: number, cLoss: number, round: number) {
         const exists = await this.CheckpointExists(ctx, id);
 
         if(!exists) {
             throw new CheckpointNotFoundError(`The checkpoint ${id} does not exist!`)
         }
+
+        const allCheckpoints: Checkpoint[] = JSON.parse(await this.GetAllCheckpoints(ctx))
+        const hAccuracy = allCheckpoints.reduce((max_acc, cur_max) => Math.max(max_acc, cur_max.HighestAccuracy), 0)
 
         const checkpoint: Checkpoint = {
             ID: id,

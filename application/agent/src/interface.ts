@@ -14,8 +14,6 @@ export interface CheckpointArgs {
 
     cAccuracy: string;
 
-    hAccuracy: string;
-
     loss: string;
 }
 
