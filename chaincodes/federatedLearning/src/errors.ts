@@ -1,7 +1,7 @@
 enum ErrorCode {
-    BAD_REQUEST = "TR400",
-    ASSET_NOT_FOUND = "TR404",
-    EXISTS = "TR409",
+    BAD_REQUEST = "CP400",
+    ASSET_NOT_FOUND = "CP404",
+    EXISTS = "CP409",
 }
 
 /**
@@ -34,27 +34,27 @@ export class TransactionNotFoundError extends ContractError {
 }
 
 /**
- * Represents the error which occurs in the basic asset transfer smart contract
- * implementation when an model already exists.
+ * Represents the error which occurs in the local learning smart contract
+ * implementation when a checkpoint already exists.
  */
-export class ModelExistsError extends ContractError {
+export class CheckpointExistsError extends ContractError {
     constructor(message: string) {
         super(message, ErrorCode.EXISTS);
-        Object.setPrototypeOf(this, ModelExistsError.prototype);
+        Object.setPrototypeOf(this, CheckpointExistsError.prototype);
 
-        this.name = 'ModelExistsError';
+        this.name = 'CheckpointExistsError';
     }
 }
 
 /**
- * Represents the error which occurs in the basic model transfer smart contract
- * implementation when an model does not exist.
+ * Represents the error which occurs in the local learning smart contract
+ * implementation when a checkpoint does not exist.
  */
-export class ModelNotFoundError extends ContractError {
+export class CheckpointNotFoundError extends ContractError {
     constructor(message: string) {
         super(message, ErrorCode.ASSET_NOT_FOUND);
-        Object.setPrototypeOf(this, ModelNotFoundError.prototype);
+        Object.setPrototypeOf(this, CheckpointNotFoundError.prototype);
 
-        this.name = 'ModelNotFoundError';
+        this.name = 'CheckpointNotFoundError';
     }
 }

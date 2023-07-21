@@ -1,7 +1,7 @@
 {
-    "name": "Federated Learning IDS Chaincode",
+    "name": "Coordinator",
     "version": "1.0.0",
-    "description": "Chaincode for federated learning implemented in TypeScript",
+    "description": "Chaincode for coordinating federated learning implemented in TypeScript",
     "main": "dist/index.js",
     "typings": "dist/index.d.ts",
     "engines": {
