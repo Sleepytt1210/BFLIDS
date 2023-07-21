@@ -48,3 +48,6 @@ bin/
 
 # IPFS
 ipfs-conf/*
+
+# Local model checkpoint
+model_ckpt/
