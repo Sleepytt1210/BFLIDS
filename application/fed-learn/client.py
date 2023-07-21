@@ -55,7 +55,9 @@ class BFLClient(fl.client.NumPyClient):
         resource_url = f"http://{self.env_vars['IPFS_HOST']}:{self.env_vars['IPFS_GATEWAY_PORT']}/ipfs/{ipfs_cid}"
 
         owner = self.env_vars['PEER_HOST_ALIAS']
+        request_url = f"http://{self.env_vars['EXPRESS_HOST']}:{self.env_vars['EXPRESS_PORT']}/transactions/checkpoint/create"
         post_model(
+            req_url=request_url,
             id=id,
             hash=hash,
             url=resource_url,
@@ -131,6 +133,7 @@ class BFLClient(fl.client.NumPyClient):
         env_vars["PEER_HOST_ALIAS"] = peer_domain
         env_vars["HOST"] = os.environ.get("C_HOST", "0.0.0.0")
         env_vars["PORT"] = os.environ.get("C_PORT")
+        env_vars["EXPRESS_HOST"] = os.environ.get("EXPRESS_HOST", "0.0.0.0")
         env_vars["EXPRESS_PORT"] = cfg.EXPRESS_PORT
 
         env_vars["IPFS_PATH"] = os.environ.get("IPFS_PATH", os.path.join(os.curdir, '..', '..', 'ipfs-conf', peer_domain))

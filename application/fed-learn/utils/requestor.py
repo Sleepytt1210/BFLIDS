@@ -1,10 +1,6 @@
 import requests
-import json
 
-baseUrl = f"http://localhost:{30027}/transactions"
-
-
-def post_model(id, hash, url, owner, round, accuracy, algorithm, loss, channel_name, chaincode_name, contract_name, client):
+def post_model(req_url, id, hash, url, owner, round, accuracy, algorithm, loss, channel_name, chaincode_name, contract_name, client):
     
     data = {
         "channelName": channel_name,
@@ -24,17 +20,17 @@ def post_model(id, hash, url, owner, round, accuracy, algorithm, loss, channel_n
     }
     
     resp = requests.post(
-        url=f"{baseUrl}/checkpoint/create", 
+        url=req_url, 
         headers={'content-type': 'application/json'}, 
         json=data
     )
 
     return resp.text
 
-def query_model(id, channelName, chaincodeName, contractName, client):
+def query_model(req_url, channelName, chaincodeName, contractName, client):
     try:
         resp = requests.get(
-            url=f"{baseUrl}/checkpoint/query/{id}",
+            url=req_url,
             params={
                 'chn': channelName,
                 'ccn': chaincodeName,
