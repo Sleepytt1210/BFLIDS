@@ -4,7 +4,7 @@ import json
 baseUrl = f"http://localhost:{30027}/transactions"
 
 
-def postModel(id, hash, url, owner, round, accuracy, hAccuracy, algorithm, loss, channel_name, chaincode_name, contract_name, client):
+def post_model(id, hash, url, owner, round, accuracy, algorithm, loss, channel_name, chaincode_name, contract_name, client):
     
     data = {
         "channelName": channel_name,
@@ -20,7 +20,6 @@ def postModel(id, hash, url, owner, round, accuracy, hAccuracy, algorithm, loss,
             "round": round,
             "cAccuracy": accuracy,
             "loss": loss,
-            "hAccuracy": hAccuracy,
         }
     }
     
@@ -32,7 +31,7 @@ def postModel(id, hash, url, owner, round, accuracy, hAccuracy, algorithm, loss,
 
     return resp.text
 
-def queryModel(id, channelName, chaincodeName, contractName, client):
+def query_model(id, channelName, chaincodeName, contractName, client):
     try:
         resp = requests.get(
             url=f"{baseUrl}/checkpoint/query/{id}",

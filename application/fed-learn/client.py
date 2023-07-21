@@ -157,12 +157,12 @@ def main() -> None:
     # Load model and data
     print("Number of clients:", NUM_CLIENTS)
 
-    print("Loading model and data for client", CID)
+    print("Loading model and data for Client", CID)
     x_train, x_test, y_train, y_test = load_data(DATA_ROOT, NUM_CLIENTS, CID)
     model = net.get_model()
 
     # Start client
-    print(f"Client connecting to server {S_ADDR}")
+    print(f"Client {CID} connecting to server {S_ADDR}")
     client = BFLClient(CID, model, x_train, y_train, x_test, y_test)
     fl.client.start_numpy_client(server_address=S_ADDR, client=client)
 
