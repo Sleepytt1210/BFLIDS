@@ -1,7 +1,10 @@
 export enum ErrorCode {
-    BAD_REQUEST = 'TR400',
-    ASSET_NOT_FOUND = 'TR404',
-    EXISTS = 'TR409',
+    MODEL_BAD_REQUEST = 'TR400',
+    MODEL_NOT_FOUND = 'TR404',
+    MODEL_EXISTS = 'TR409',
+    CP_BAD_REQUEST = 'CP400',
+    CP_NOT_FOUND = 'CP404',
+    CP_EXISTS = 'CP409'
 }
 
 /**
@@ -58,13 +61,45 @@ export class ModelNotFoundError extends ContractError {
     }
 }
 
+
+/**
+ * Represents the error which occurs in the local learning smart contract
+ * implementation when a checkpoint already exists.
+ */
+export class CheckpointExistsError extends ContractError {
+    constructor(message: string) {
+        super(message);
+        Object.setPrototypeOf(this, CheckpointExistsError.prototype);
+
+        this.name = 'CheckpointExistsError';
+    }
+}
+
+/**
+ * Represents the error which occurs in the local learning smart contract
+ * implementation when a checkpoint does not exist.
+ */
+export class CheckpointNotFoundError extends ContractError {
+    constructor(message: string) {
+        super(message);
+        Object.setPrototypeOf(this, CheckpointNotFoundError.prototype);
+
+        this.name = 'CheckpointNotFoundError';
+    }
+}
+
+
 export const handleError = (e: Error) => {
     const msg = e.message;
-    if (msg.startsWith(ErrorCode.ASSET_NOT_FOUND)) {
+    if (msg.startsWith(ErrorCode.MODEL_NOT_FOUND)) {
         return new ModelNotFoundError(msg);
-    } else if (msg.startsWith(ErrorCode.EXISTS)) {
+    } else if (msg.startsWith(ErrorCode.MODEL_EXISTS)) {
         return new ModelExistsError(msg);
-    } 
+    } else if (msg.startsWith(ErrorCode.CP_NOT_FOUND)) {
+        return new CheckpointNotFoundError(msg);
+    } else if (msg.startsWith(ErrorCode.CP_EXISTS)) {
+        return new CheckpointExistsError(msg);
+    }
 
     return e;
 } 

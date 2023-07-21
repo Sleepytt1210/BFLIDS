@@ -14,7 +14,7 @@
         "lint": "tslint -c tslint.json 'src/**/*.ts",
         "prepare": "npm run build",
         "pretest": "npm run lint",
-        "start": "npm run build && node dist/app.js"
+        "start": "npm run build && node dist/src/app.js"
     },
     "engineStrict": true,
     "author": "Dylon Wong",

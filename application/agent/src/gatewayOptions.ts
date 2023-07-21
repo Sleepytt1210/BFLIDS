@@ -6,7 +6,7 @@ export interface ConnectionProfile {
 
 export interface ClientProfile {
     org: string;
-    mspId: string;
+    mspID: string;
     peerHost: string;
     peerHostAlias: string;
     port: number;

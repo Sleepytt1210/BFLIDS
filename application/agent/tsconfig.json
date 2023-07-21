@@ -8,6 +8,8 @@
        "sourceMap": true,
        "noImplicitAny": true,
        "esModuleInterop": true,
+       "target": "ES2017",
+       "module": "CommonJS"
    },
    "include": [
        "./src/**/*"

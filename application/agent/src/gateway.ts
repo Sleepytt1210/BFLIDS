@@ -50,10 +50,10 @@ export async function initLedger(contract: Contract): Promise<void> {
 /**
  * Evaluate a transaction to query ledger state.
  */
-export async function getAllmodels(contract: Contract): Promise<void> {
-    console.log('\n--> Evaluate Transaction: GetAllmodels, function returns all the current models on the ledger');
+export async function getAllCheckpoints(contract: Contract): Promise<void> {
+    console.log('\n--> Evaluate Transaction: GetAllCheckpoints, function returns all the current checkpoints on the ledger');
 
-    const resultBytes = await contract.evaluateTransaction('GetAllmodels');
+    const resultBytes = await contract.evaluateTransaction('GetAllCheckpoints');
 
     const resultJson = utf8Decoder.decode(resultBytes);
     const result = JSON.parse(resultJson);
@@ -63,52 +63,47 @@ export async function getAllmodels(contract: Contract): Promise<void> {
 /**
  * Submit a transaction synchronously, blocking until it has been committed to the ledger.
  */
-export async function createModel(contract: Contract, id: string, hash: string, url: string, owner: string, round: number, accuracy: number, loss: number): Promise<void> {
-    console.log('\n--> Submit Transaction: CreateModel, creates new model with ID, Color, Hash, URL, Owner, Round, Accuracy and Loss arguments');
+export async function createCheckpoint(contract: Contract, id: string, hash: string, url: string, owner: string, algorithm: string, hAccuracy: string, cAccuracy: string, loss: string, round: string): Promise<void> {
+    console.log('\n--> Submit Transaction: CreateCheckpoint, creates new model with ID, Hash, URL, Owner, Algorithm, Highest Accuracy, Current Accuracy, Loss and Round arguments');
+
+    // const result = await contract.evaluateTransaction('CreateCheckpoint',
+    //     id,
+    //     hash,
+    //     url,
+    //     owner,
+    //     algorithm,
+    //     hAccuracy,
+    //     cAccuracy,
+    //     loss,
+    //     round
+    // )
+
+    // console.log(result)
 
     await contract.submitTransaction(
-        'CreateModel',
+        'CreateCheckpoint',
         id,
         hash,
         url,
         owner,
-        round,
-        accuracy,
-        loss
+        algorithm,
+        hAccuracy,
+        cAccuracy,
+        loss,
+        round
     );
 
     console.log('*** Transaction committed successfully');
 }
 
-export async function readModelByID(contract: Contract, id: string): Promise<any> {
-    console.log('\n--> Evaluate Transaction: Readmodel, function returns model attributes');
+export async function readCheckpointByID(contract: Contract, id: string): Promise<any> {
+    console.log('\n--> Evaluate Transaction: ReadCheckpoint, function returns checkpoint info of a client');
 
-    const resultBytes = await contract.evaluateTransaction('ReadModel', id);
+    const resultBytes = await contract.evaluateTransaction('ReadCheckpoint', id);
 
     const resultJson = utf8Decoder.decode(resultBytes);
     const result = JSON.parse(resultJson);
     return result;
-}
-
-/**
- * submitTransaction() will throw an error containing details of any error responses from the smart contract.
- */
-async function updateNonExistentmodel(contract: Contract): Promise<void>{
-    console.log('\n--> Submit Transaction: Updatemodel model70, model70 does not exist and should return an error');
-
-    try {
-        await contract.submitTransaction(
-            'Updatemodel',
-            'model70',
-            'blue',
-            '5',
-            'Tomoko',
-            '300',
-        );
-        console.log('******** FAILED to return an error');
-    } catch (error) {
-        console.log('*** Successfully caught the error: \n', error);
-    }
 }
 
 export const getNetwork = async (gateway: Gateway, channelName: string) => {
@@ -116,8 +111,8 @@ export const getNetwork = async (gateway: Gateway, channelName: string) => {
     return network;
 }
 
-export const getContract = async (network: Network, chaincodeName: string) => {
-    const contract = await network.getContract(chaincodeName);
+export const getContract = async (network: Network, chaincodeName: string, contractName: string) => {
+    const contract = await network.getContract(chaincodeName, contractName);
     return contract;
 }
 
@@ -126,7 +121,7 @@ export const getGateway = async (connectionProfile: ConnectionProfile, clientPro
 
     const gateway = connect({
         client,
-        identity: await newIdentity(clientProfile.mspId, connectionProfile.certPath),
+        identity: await newIdentity(clientProfile.mspID, connectionProfile.certPath),
         signer: await newSigner(connectionProfile.keyPath),
         // Default timeouts for different gRPC calls
         evaluateOptions: () => {

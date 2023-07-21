@@ -1,36 +1,38 @@
 import express, { Request, Response } from 'express';
 import * as config from '../utils/config'
 import { Contract, Gateway, Network } from '@hyperledger/fabric-gateway';
-import { getContract, getNetwork, getGateway, readModelByID, createModel } from './gateway';
+import { getContract, getNetwork, getGateway, createCheckpoint, readCheckpointByID } from './gateway';
 import { ClientProfile, ConnectionProfile } from './gatewayOptions';
 import { getReasonPhrase, StatusCodes } from 'http-status-codes';
-import { ModelExistsError, ModelNotFoundError, handleError } from './errors';
-import { ModelArgs } from './interface';
+import { CheckpointNotFoundError, handleError } from './errors';
+import { RequestArgs } from './interface';
 
 const main = async () => {
     const router = express();
-    let gateway: Gateway, network: Network, contract: Contract;
+    router.use(express.json())
 
     const { OK, ACCEPTED, BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND } = StatusCodes
 
-    router.post('/transactions/create', async (req: Request, resp: Response) => {
+    router.post('/transactions/checkpoint/create', async (req: Request, resp: Response) => {
 
         try {
-            const args = req.body() as ModelArgs;
-            console.log(`Creating new model with args ${args}`);
+            console.log(req.body)
+            const {channelName, chaincodeName, contractName, client, checkpointData} = req.body as RequestArgs;
+            console.log(`Creating new checkpoint with args ${JSON.stringify(checkpointData)} from client ${client}`);
             
-            await setupConnection();
-            isConnected();
-            await createModel(contract, args.id, args.hash, args.url, args.owner, args.round, args.accuracy, args.loss);
+            const {gateway, network, contract} = await setupConnection(channelName, chaincodeName, contractName);
+            isConnected(gateway, network, contract);
+            console.log("Gateway connection is setup.")
+            await createCheckpoint(contract, checkpointData.id, checkpointData.hash, checkpointData.url, checkpointData.owner, checkpointData.algorithm, checkpointData.hAccuracy, checkpointData.cAccuracy, checkpointData.loss, checkpointData.round);
             return resp.status(ACCEPTED).json({
                 status: getReasonPhrase(ACCEPTED),
-                modelId: args.id,
+                modelID: checkpointData.id,
                 timestamp: new Date().toISOString()
             });
         } catch (err) {
             console.error(err);
             const parsedErr = handleError(err);
-            if (parsedErr instanceof ModelExistsError) {
+            if (parsedErr instanceof CheckpointNotFoundError) {
                 return resp.status(BAD_REQUEST).json({
                     status: getReasonPhrase(BAD_REQUEST),
                     timestamp: new Date().toISOString()
@@ -40,31 +42,37 @@ const main = async () => {
             if (String(err.message).includes('Conversion')) {
                 return resp.status(BAD_REQUEST).json({
                     status: getReasonPhrase(BAD_REQUEST),
-                    reason: 'Invalid argmuments!',
+                    reason: 'Invalid arguments!',
                     timestamp: new Date().toISOString()
                 })
             }
 
             return resp.status(INTERNAL_SERVER_ERROR).json({
                 status: getReasonPhrase(INTERNAL_SERVER_ERROR),
+                details: `${err.name}: ${err.message}`,
                 timestamp: new Date().toISOString()
             })
         }
     })
 
-    router.get('/transactions/query/:modelId', async (req: Request, resp: Response) => {
-        const modelId = req.params.modelId;
-        console.log(`Requesting model ${modelId}`);
+    router.get('/transactions/checkpoint/query/:cpID', async (req: Request, resp: Response) => {
+        const cpID = req.params.cpID;
+        const channelName = req.query.chn as string;
+        const chaincodeName = req.query.ccn as string;
+        const contractName = req.query.ctn as string;
+        const clientID = req.query.clID as string;
+    
+        console.log(`Requesting checkpoint ${cpID} of client ${clientID}`);
 
         try {
-            await setupConnection();
-            isConnected();
-            const data = await readModelByID(contract, modelId);
+            const {gateway, network, contract} = await setupConnection(channelName, chaincodeName, contractName);
+            isConnected(gateway, network, contract);
+            const data = await readCheckpointByID(contract, cpID);
             resp.status(OK).json(data);
         } catch (err) {
             console.error(err);
             const parsedErr = handleError(err);
-            if (parsedErr instanceof ModelNotFoundError) {
+            if (parsedErr instanceof CheckpointNotFoundError) {
                 return resp.status(NOT_FOUND).json({
                     status: getReasonPhrase(NOT_FOUND),
                     timestamp: new Date().toISOString()
@@ -73,19 +81,16 @@ const main = async () => {
 
             return resp.status(INTERNAL_SERVER_ERROR).json({
                 status: getReasonPhrase(INTERNAL_SERVER_ERROR),
+                details: err.message,
                 timestamp: new Date().toISOString()
             })
         }
-
-        router.listen(config.expressPort, () => {
-            console.log(`Starting Fabric Rest API at localhost:${config.expressPort}`)
-        })
     })
 
-    async function setupConnection() {
+    async function setupConnection(channelName: string, chaincodeName: string, contractName: string): Promise<{gateway: Gateway, network: Network, contract: Contract}> {
         const clientProfile: ClientProfile = {
             org: config.org,
-            mspId: config.mspId,
+            mspID: config.mspID,
             peerHost: config.peerHost,
             peerHostAlias: config.peerHostAlias,
             port: config.port,
@@ -98,14 +103,16 @@ const main = async () => {
             tlsCertPath: config.tlsCertPath
         }
 
-        gateway = await getGateway(connectionProfile, clientProfile);
+        const gateway = await getGateway(connectionProfile, clientProfile);
 
-        network = await getNetwork(gateway, config.channelName);
+        const network = await getNetwork(gateway, channelName);
 
-        contract = await getContract(network, config.chaincodeName);
+        const contract = await getContract(network, chaincodeName, contractName);
+
+        return {gateway: gateway, network: network, contract: contract}
     }
 
-    function isConnected() {
+    function isConnected(gateway: Gateway, network: Network, contract: Contract) {
         if (!gateway) {
             throw new Error('Gateway is not connected!');
         }
@@ -118,4 +125,10 @@ const main = async () => {
         return true;
     }
 
+    router.listen(config.expressPort, () => {
+        console.log(`Starting Fabric Rest API at localhost:${config.expressPort}`)
+    })
+
 }
+
+main()

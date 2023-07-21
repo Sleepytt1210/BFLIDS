@@ -1,4 +1,4 @@
-export interface ModelArgs {
+export interface CheckpointArgs {
 
     id: string;
 
@@ -6,11 +6,27 @@ export interface ModelArgs {
 
     hash: string;
 
+    algorithm: string;
+
     owner: string;
 
-    round: number;
+    round: string;
 
-    accuracy: number;
+    cAccuracy: string;
 
-    loss: number;
+    hAccuracy: string;
+
+    loss: string;
+}
+
+export interface RequestArgs {
+    channelName: string;
+    
+    chaincodeName: string;
+
+    contractName: string;
+
+    client: string;
+
+    checkpointData: CheckpointArgs;
 }
