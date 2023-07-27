@@ -3,13 +3,13 @@ export PATH=${PWD}/bin:$PATH
 export FABRIC_CFG_PATH=$PWD/config/
 
 function asOrg() {
-    echo "Using ${ORG}"
+    echo "Using ${1}"
     ORDERER_CA=${PWD}/network/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
-    PEER0_ORG_CA=${PWD}/network/organizations/peerOrganizations/${ORG}.example.com/tlsca/tlsca.${ORG}.example.com-cert.pem
+    PEER0_ORG_CA=${PWD}/network/organizations/peerOrganizations/${1}.example.com/tlsca/tlsca.${1}.example.com-cert.pem
     CORE_PEER_LOCALMSPID=Org1MSP
-    CORE_PEER_MSPCONFIGPATH=${PWD}/network/organizations/peerOrganizations/${ORG}.example.com/users/Admin@${ORG}.example.com/msp
+    CORE_PEER_MSPCONFIGPATH=${PWD}/network/organizations/peerOrganizations/${1}.example.com/users/Admin@${1}.example.com/msp
     CORE_PEER_ADDRESS=localhost:7051
-    CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/network/organizations/peerOrganizations/${ORG}.example.com/tlsca/tlsca.${ORG}.example.com-cert.pem
+    CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/network/organizations/peerOrganizations/${1}.example.com/tlsca/tlsca.${1}.example.com-cert.pem
 
     export CORE_PEER_TLS_ENABLED=true
     export ORDERER_CA="${ORDERER_CA}"
@@ -22,39 +22,79 @@ function asOrg() {
     export CORE_PEER_LOCALMSPID="${CORE_PEER_LOCALMSPID}"
 }
 
-function invoke() {
+function parsePeerConnectionParameters() {
+    PEER_CONN_PARMS=()
+    PEERS=""
+    while [ "$#" -gt 0 ]; do
+        asOrg $1
+        PEER="peer0.org$1"
+        ## Set peer addresses
+        if [ -z "$PEERS" ]
+        then
+            PEERS="$PEER"
+        else
+            PEERS="$PEERS $PEER"
+        fi
+        PEER_CONN_PARMS=("${PEER_CONN_PARMS[@]}" --peerAddresses $CORE_PEER_ADDRESS)
+        ## Set path to TLS certificate
+        CA=PEER0_ORG$1_CA
+        TLSINFO=(--tlsRootCertFiles "${!CA}")
+        PEER_CONN_PARMS=("${PEER_CONN_PARMS[@]}" "${TLSINFO[@]}")
+        # shift by one to get to the next organization
+        shift
+    done
+}
+
+function parseArgs() {
+    
     if [[ -z $3 ]]; then
         ARGS=''
     else
         ARGS=", $(echo $3 | sed 's/[^[:space:],]\+/"&"/g')"
     fi
+
+    if [[ -z $1 ]]; then
+        FUNC_NAME="$2"
+    else
+        FUNC_NAME="$1:$2"
+    fi
+}
+
+function invoke() {
+    parseArgs $@
+
+    local OLD_ORG=$ORG
+    parsePeerConnectionParameters 1 2 3
+    asOrg $OLD_ORG
     set -x;
-    peer chaincode invoke --orderer "0.0.0.0:7050" --ordererTLSHostnameOverride orderer.example.com --tls --cafile "$ORDERER_CA" -C fedlearn -n fedLearn --peerAddresses $CORE_PEER_ADDRESS --tlsRootCertFiles $CORE_PEER_TLS_ROOTCERT_FILE --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/network/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt" -c "{\"Args\":[\"$1:$2\"${ARGS}]}"
+    peer chaincode invoke --orderer "0.0.0.0:7050" --ordererTLSHostnameOverride orderer.example.com --tls --cafile "$ORDERER_CA" -C fedlearn -n "$CHAINCODE_NAME" "${PEER_CONN_PARMS[@]}" -c "{\"Args\":[\"${FUNC_NAME}\"${ARGS}]}"
     { set +x; } 2>/dev/null
 }
 
 function query() {
-    if [[ -z $3 ]]; then
-        ARGS=''
-    else
-        ARGS=", $(echo $3 | sed 's/[^[:space:],]\+/"&"/g')"
-    fi
+    asOrg $ORG
+    parseArgs "$@"
+
+    echo "CONTRACT_NAME: $1, FUNCTION_NAME: $2, ARGS: $3"
+
     set -x;
-    peer chaincode query --orderer "0.0.0.0:7050" --ordererTLSHostnameOverride orderer.example.com --tls --cafile "$ORDERER_CA" -C fedlearn -n fedLearn -c "{\"Args\":[\"$1:$2\"${ARGS}]}"
+    peer chaincode query --orderer "0.0.0.0:7050" --ordererTLSHostnameOverride orderer.example.com --tls --cafile "$ORDERER_CA" -C fedlearn -n "$CHAINCODE_NAME" -c "{\"Args\":[\"${FUNC_NAME}\"${ARGS}]}"
     { set +x; } 2>/dev/null
 }
 
 function printHelp() {
     println "Usage: `basename ${0}` <command> [args]"
     println "  Commands:"
-    println "    invoke - To invoke the fedLearn chaincode as a peer."
-    println "    query - To query the fedLearn chaincode as a peer." 
+    println "    invoke - To invoke the chaincode as a peer."
+    println "    query - To query the chaincode as a peer." 
     println "  Flags:" 
-    println "    -c <contract_name> Contract name to be used." 
-    println "    -f <func_name>     Function name to be called." 
-    println "    -u <org_name>      Organization name (e.g. org1, org2...)." 
-    println "    -a <args>          Arguments to be passed into a function, put an empty string if None." 
-    println "  Example: `basename ${0}` invoke -c GlobalLearningContract -f CreateCheckpoint -u org1 -a \"model_r1, model_r1_hash, ipfs.com/somehash, User1@org1.example.com, BiLSTM, 93.7, 93.7, 93.7, 1\""
+    println "    -g <chaincode_name>    Chaincode name to be used. Default is 'checkpoints'"
+    println "    -c <contract_name>     Contract name to be used." 
+    println "    -f <func_name>         Function name to be called." 
+    println "    -u <org_name>          Organization name (e.g. org1, org2...)." 
+    println "    -a <args>              Arguments to be passed into a function, put an empty string if None." 
+    println "    -h                     Print this help message."
+    println "  Example: `basename ${0}` invoke -g checkpoints -c GlobalLearningContract -f CreateCheckpoint -u org1 -a \"model_r1, model_r1_hash, ipfs.com/somehash, User1@org1.example.com, BiLSTM, 93.7, 93.7, 93.7, 1\""
 }
 
 function println() {
@@ -69,8 +109,11 @@ else
     shift
 fi
 
-while getopts ":c:f:u:a:" opt; do
+while getopts ":g:c:f:u:a:" opt; do
     case ${opt} in
+    g ) 
+        CHAINCODE_NAME=$OPTARG
+        ;;
     c )
         CONTRACT_NAME=$OPTARG
         ;;
@@ -78,10 +121,14 @@ while getopts ":c:f:u:a:" opt; do
         FUNCTION_NAME=$OPTARG
         ;;
     u ) 
-        ORG=${OPTARG:-org1}
+        ORG=${OPTARG:-'org1'}
         ;;
     a ) 
         FUNC_ARGS+=("$OPTARG")
+        ;;
+    h ) 
+        printHelp
+        exit 1
         ;;
     \? )
         echo "Invalid Option: -$OPTARG" 1>&2
@@ -94,14 +141,15 @@ while getopts ":c:f:u:a:" opt; do
     esac
 done
 shift $((OPTIND -1))
-asOrg
+
+: ${CONTRACT_NAME:?'Missing contract name -c!'} ${FUNCTION_NAME:?'Missing function name -f!'}
 
 case "$COMMAND" in
     invoke)
-        invoke $CONTRACT_NAME $FUNCTION_NAME "${FUNC_ARGS[@]}"
+        invoke "$CONTRACT_NAME" "$FUNCTION_NAME" "${FUNC_ARGS[@]}"
         ;;
     query)
-        query $CONTRACT_NAME $FUNCTION_NAME "${FUNC_ARGS[@]}"
+        query "$CONTRACT_NAME" "$FUNCTION_NAME" "${FUNC_ARGS[@]}"
         ;;
     * )
         printHelp

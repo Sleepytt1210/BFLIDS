@@ -35,5 +35,6 @@ network/network.sh up -ca
 
 network/network.sh createChannel -c fedlearn
 
-network/network.sh deployCC -c fedlearn -ccn fedLearn -ccp ../chaincodes/federatedLearning -ccl typescript
+network/network.sh deployCC -c fedlearn -ccn checkpoints -ccp ../chaincodes/checkpoints -ccl typescript
 
+network/network.sh deployCC -c fedlearn -ccn accuracyT -ccp ../chaincodes/accuracy_threshold -ccl typescript -cci InitLedger
