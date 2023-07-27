@@ -1,14 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
 #############################################################################
 #   This is a configuration file for the fabric-ca-server command.
 #
@@ -51,7 +40,7 @@
 version: 1.2.0
 
 # Server's listening port (default: 7054)
-port: 7054
+port: 11054
 
 # Enables debug logging (default: false)
 debug: false
@@ -91,7 +80,7 @@ tls:
 #############################################################################
 ca:
   # Name of this CA
-  name: Org1CA
+  name: Org3CA
   # Key file (is only used to import a private key into BCCSP)
   keyfile:
   # Certificate file (default: ca-cert.pem)
@@ -314,16 +303,16 @@ signing:
 #     CA certificates though it can still issue end entity certificates.
 ###########################################################################
 csr:
-   cn: ca.org1.example.com
+   cn: ca.org3.example.com
    names:
       - C: UK
         ST: "Greater Manchester"
         L: "Manchester"
-        O: org1.example.com
+        O: org3.example.com
         OU:
    hosts:
      - localhost
-     - org1.example.com
+     - org3.example.com
    ca:
       expiry: 131400h
       pathlength: 1

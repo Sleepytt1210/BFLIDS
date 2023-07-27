@@ -32,8 +32,15 @@ elif [[ ${ORG,,} == "org2" || ${ORG,,} == "magnetocorp" ]]; then
    CORE_PEER_ADDRESS=localhost:9051
    CORE_PEER_TLS_ROOTCERT_FILE=${DIR}/network/organizations/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
 
+elif [[ ${ORG,,} == "org3" || ${ORG,,} == "university" ]]; then
+
+   CORE_PEER_LOCALMSPID=Org3MSP
+   CORE_PEER_MSPCONFIGPATH=${DIR}/network/organizations/peerOrganizations/org3.example.com/users/Admin@org3.example.com/msp
+   CORE_PEER_ADDRESS=localhost:11051
+   CORE_PEER_TLS_ROOTCERT_FILE=${DIR}/network/organizations/peerOrganizations/org3.example.com/tlsca/tlsca.org3.example.com-cert.pem
+
 else
-   echo "Unknown \"$ORG\", please choose Org1/Digibank or Org2/Magnetocorp"
+   echo "Unknown \"$ORG\", please choose Org1/Digibank | Org2/Magnetocorp | Org3/University"
    echo "For example to get the environment variables to set upa Org2 shell environment run:  ./setOrgEnv.sh Org2"
    echo
    echo "This can be automated to set them as well with:"
