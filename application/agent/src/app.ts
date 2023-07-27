@@ -126,7 +126,7 @@ const main = async () => {
     }
 
     router.listen(config.expressPort, () => {
-        console.log(`Starting Fabric Rest API at localhost:${config.expressPort}`)
+        console.log(`Started Fabric Rest API at localhost:${config.expressPort}`)
     })
 
 }
