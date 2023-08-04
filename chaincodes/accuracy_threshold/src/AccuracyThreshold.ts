@@ -17,7 +17,7 @@ export class AccuracyThreshold extends Contract {
     public async InitLedger(ctx: Context): Promise<void> {
         const threshold: AccuracyT = {
                 ID: THRESHOLD_ID,
-                Requestor: 'CS.manchester.ac.uk',
+                Requestor: 'org1.example.com',
                 Threshold: 1
             }
 
