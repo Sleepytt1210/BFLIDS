@@ -69,7 +69,7 @@ services:
       - couchdb1
 
   couchdb2:
-    container_name: couchdb1
+    container_name: couchdb2
     image: couchdb:3.3.2
     labels:
       service: hyperledger-fabric
