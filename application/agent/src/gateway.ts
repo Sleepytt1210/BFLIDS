@@ -57,27 +57,14 @@ export async function getAllCheckpoints(contract: Contract): Promise<void> {
 
     const resultJson = utf8Decoder.decode(resultBytes);
     const result = JSON.parse(resultJson);
-    console.log('*** Result:', result);
+    return result;
 }
 
 /**
  * Submit a transaction synchronously, blocking until it has been committed to the ledger.
  */
-export async function createCheckpoint(contract: Contract, id: string, hash: string, url: string, owner: string, algorithm: string, cAccuracy: string, loss: string, round: string): Promise<void> {
-    console.log('\n--> Submit Transaction: CreateCheckpoint, creates new model with ID, Hash, URL, Owner, Algorithm, Current Accuracy, Loss and Round arguments');
-
-    // const result = await contract.evaluateTransaction('CreateCheckpoint',
-    //     id,
-    //     hash,
-    //     url,
-    //     owner,
-    //     algorithm,
-    //     cAccuracy,
-    //     loss,
-    //     round
-    // )
-
-    // console.log(result)
+export async function createCheckpoint(contract: Contract, id: string, hash: string, url: string, owner: string, algorithm: string, cAccuracy: string, loss: string, round: string, fedSession: string): Promise<void> {
+    console.log('\n--> Submit Transaction: CreateCheckpoint, creates new model with ID, Hash, URL, Owner, Algorithm, Current Accuracy, Loss, Round and FedSession arguments');
 
     await contract.submitTransaction(
         'CreateCheckpoint',
@@ -88,7 +75,8 @@ export async function createCheckpoint(contract: Contract, id: string, hash: str
         algorithm,
         cAccuracy,
         loss,
-        round
+        round,
+        fedSession
     );
 
     console.log('*** Transaction committed successfully');
@@ -103,6 +91,17 @@ export async function readCheckpointByID(contract: Contract, id: string): Promis
     const result = JSON.parse(resultJson);
     return result;
 }
+
+export async function getLatestCheckpoint(contract: Contract): Promise<any> {
+    console.log('\n--> Evaluate Transaction: GetLatestCheckpoint, function returns latest checkpoint info of a client');
+
+    const resultBytes = await contract.evaluateTransaction('GetLatestCheckpoint');
+
+    const resultJson = utf8Decoder.decode(resultBytes);
+    const result = JSON.parse(resultJson);
+    return result;
+}
+
 
 export const getNetwork = async (gateway: Gateway, channelName: string) => {
     const network = await gateway.getNetwork(channelName);

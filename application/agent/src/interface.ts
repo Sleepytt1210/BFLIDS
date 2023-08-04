@@ -15,6 +15,8 @@ export interface CheckpointArgs {
     cAccuracy: string;
 
     loss: string;
+
+    fedSession: string;
 }
 
 export interface RequestArgs {
