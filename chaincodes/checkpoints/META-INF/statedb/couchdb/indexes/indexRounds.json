@@ -1,0 +1,12 @@
+{
+    "index": {
+        "fields": [
+            "docType",
+            "FedSession",
+            "Round"
+        ]
+    },
+    "ddoc": "indexRoundsDoc",
+    "name": "indexRounds",
+    "type": "json"
+}

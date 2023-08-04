@@ -1,0 +1,11 @@
+{
+    "index": {
+        "fields": [
+            "docType",
+            "HighestAccuracy"
+        ]
+    },
+    "ddoc": "indexAccDoc",
+    "name": "indexAcc",
+    "type": "json"
+}

@@ -1,11 +1,11 @@
 import { Object, Property } from "fabric-contract-api"
 
-type CheckpointTypes = "checkpoint";
+type CheckpointTypes = "localCheckpoint" | "globalCheckpoint";
 
 @Object()
 export class Checkpoint{
     @Property()
-    public docType?: CheckpointTypes = "checkpoint";
+    public docType?: CheckpointTypes = "globalCheckpoint";
 
     @Property()
     public ID!: string;
@@ -33,4 +33,7 @@ export class Checkpoint{
 
     @Property()
     public Round: number;
+
+    @Property()
+    public FedSession: number;
 }

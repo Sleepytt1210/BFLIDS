@@ -34,7 +34,7 @@ export class TransactionNotFoundError extends ContractError {
 }
 
 /**
- * Represents the error which occurs in the local learning smart contract
+ * Represents the error which occurs in the learning smart contracts
  * implementation when a checkpoint already exists.
  */
 export class CheckpointExistsError extends ContractError {
@@ -47,7 +47,7 @@ export class CheckpointExistsError extends ContractError {
 }
 
 /**
- * Represents the error which occurs in the local learning smart contract
+ * Represents the error which occurs in the learning smart contracts
  * implementation when a checkpoint does not exist.
  */
 export class CheckpointNotFoundError extends ContractError {
@@ -56,5 +56,18 @@ export class CheckpointNotFoundError extends ContractError {
         Object.setPrototypeOf(this, CheckpointNotFoundError.prototype);
 
         this.name = 'CheckpointNotFoundError';
+    }
+}
+
+/**
+ * Represents the error which occurs in the learning smart contracts
+ * implementation when a checkpoint does not exist.
+ */
+export class BadCheckpointError extends ContractError {
+    constructor(message: string) {
+        super(message, ErrorCode.BAD_REQUEST);
+        Object.setPrototypeOf(this, CheckpointNotFoundError.prototype);
+
+        this.name = 'BadCheckpointError';
     }
 }
