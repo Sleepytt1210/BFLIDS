@@ -45,6 +45,10 @@ dist
 # Hyperledger files
 builders/
 bin/
+!network/organizations/**/*.sh
+network/organizations/fabric-ca/*
+network/organizations/peerOrganizations/*
+network/organizations/ordererOrganizations/*
 
 # IPFS
 ipfs-conf/*
