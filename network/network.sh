@@ -312,7 +312,7 @@ function createChannel() {
 
 ## Call the script to deploy a chaincode to the channel
 function deployCC() {
-  scripts/deployCC.sh $CHANNEL_NAME $CC_NAME $CC_SRC_PATH $CC_SRC_LANGUAGE $CC_VERSION $CC_SEQUENCE $CC_INIT_FCN $CC_END_POLICY $CC_COLL_CONFIG $CLI_DELAY $MAX_RETRY $VERBOSE
+  scripts/deployCC.sh $CHANNEL_NAME $CC_NAME $CC_SRC_PATH $CC_SRC_LANGUAGE $CC_VERSION $CC_SEQUENCE $CC_INIT_FCN $CC_END_POLICY $CC_COLL_CONFIG $CLI_DELAY $MAX_RETRY $VERBOSE $IS_UPGRADE
 
   if [ $? -ne 0 ]; then
     fatalln "Deploying chaincode failed"
@@ -354,7 +354,7 @@ function networkDown() {
   # Don't remove the generated artifacts -- note, the ledgers are always removed
   if [ "$MODE" != "restart" ]; then
     # Bring down the network, deleting the volumes
-    ${CONTAINER_CLI} volume rm docker_orderer.example.com docker_peer0.org1.example.com docker_peer0.org2.example.com docker_peer0.org3.example.com
+    ${CONTAINER_CLI} volume rm compose_orderer.example.com compose_peer0.org1.example.com compose_peer0.org2.example.com compose_peer0.org3.example.com
     #Cleanup the chaincode containers
     clearContainers
     #Cleanup images
@@ -413,6 +413,8 @@ CCAAS_DOCKER_RUN=true
 CC_VERSION="1.0"
 # Chaincode definition sequence
 CC_SEQUENCE=1
+# Upgrade chaincode? Defaults to false
+IS_UPGRADE=false
 # default database
 DATABASE="leveldb"
 
@@ -502,6 +504,10 @@ while [[ $# -ge 1 ]] ; do
     ;;
   -ccaasdocker )
     CCAAS_DOCKER_RUN="$2"
+    shift
+    ;;
+  -ccup )
+    IS_UPGRADE=true
     shift
     ;;
   -verbose )

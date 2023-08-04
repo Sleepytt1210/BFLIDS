@@ -14,6 +14,7 @@ CC_COLL_CONFIG=${9:-"NA"}
 DELAY=${10:-"3"}
 MAX_RETRY=${11:-"5"}
 VERBOSE=${12:-"false"}
+IS_UPGRADE=${13-"false"}
 
 println "executing with the following"
 println "- CHANNEL_NAME: ${C_GREEN}${CHANNEL_NAME}${C_RESET}"
@@ -28,6 +29,7 @@ println "- CC_INIT_FCN: ${C_GREEN}${CC_INIT_FCN}${C_RESET}"
 println "- DELAY: ${C_GREEN}${DELAY}${C_RESET}"
 println "- MAX_RETRY: ${C_GREEN}${MAX_RETRY}${C_RESET}"
 println "- VERBOSE: ${C_GREEN}${VERBOSE}${C_RESET}"
+println "- IS_UPGRADE: ${C_GREEN}${IS_UPGRADE}${C_RESET}"
 
 FABRIC_CFG_PATH=$PWD/../config/
 
@@ -113,7 +115,11 @@ fi
 
 packageChaincode() {
   set -x
-  peer lifecycle chaincode package ${CC_NAME}.tar.gz --path ${CC_SRC_PATH} --lang ${CC_RUNTIME_LANGUAGE} --label ${CC_NAME}_${CC_VERSION} >&log.txt
+  if [[ "$IS_UPGRADE" == "false" ]]; then
+    peer lifecycle chaincode package ${CC_NAME}.tar.gz --path ${CC_SRC_PATH} --lang ${CC_RUNTIME_LANGUAGE} --label ${CC_NAME}_${CC_VERSION} >&log.txt
+  else
+    peer chaincode package ${CC_NAME}.tar.gz --path ${CC_SRC_PATH} --lang ${CC_RUNTIME_LANGUAGE} --label ${CC_NAME}_${CC_VERSION} >&log.txt
+  fi
   res=$?
   PACKAGE_ID=$(peer lifecycle chaincode calculatepackageid ${CC_NAME}.tar.gz)
   { set +x; } 2>/dev/null
@@ -140,57 +146,63 @@ checkPrereqs
 ## package the chaincode
 packageChaincode
 
-## Install chaincode on peer0.org1 and peer0.org2
-infoln "Installing chaincode on peer0.org1..."
-installChaincode 1
-infoln "Installing chaincode on peer0.org2..."
-installChaincode 2
-infoln "Installing chaincode on peer0.org3..."
-installChaincode 3
-
-## query whether the chaincode is installed
-queryInstalled 1
 
 ## approve the definition for org1
-approveForMyOrg 1
+if [[ "$IS_UPGRADE" == "false" ]]; then 
+  ## Install chaincode on peer0.org1 and peer0.org2
+  infoln "Installing chaincode on peer0.org1..."
+  installChaincode 1
+  infoln "Installing chaincode on peer0.org2..."
+  installChaincode 2
+  infoln "Installing chaincode on peer0.org3..."
+  installChaincode 3
 
-## check whether the chaincode definition is ready to be committed
-## expect org1 to have approved and org2 not to
-checkCommitReadiness 1 "\"Org1MSP\": true" "\"Org2MSP\": false" "\"Org3MSP\": false"
-checkCommitReadiness 2 "\"Org1MSP\": true" "\"Org2MSP\": false" "\"Org3MSP\": false"
-checkCommitReadiness 3 "\"Org1MSP\": true" "\"Org2MSP\": false" "\"Org3MSP\": false"
+  ## query whether the chaincode is installed
+  queryInstalled 1
+  approveForMyOrg 1
 
-## query whether the chaincode is installed
-queryInstalled 2
+  ## check whether the chaincode definition is ready to be committed
+  ## expect org1 to have approved and org2 not to
+  checkCommitReadiness 1 "\"Org1MSP\": true" "\"Org2MSP\": false" "\"Org3MSP\": false"
+  checkCommitReadiness 2 "\"Org1MSP\": true" "\"Org2MSP\": false" "\"Org3MSP\": false"
+  checkCommitReadiness 3 "\"Org1MSP\": true" "\"Org2MSP\": false" "\"Org3MSP\": false"
 
-## now approve also for org2
-approveForMyOrg 2
+  ## query whether the chaincode is installed
+  queryInstalled 2
 
-## check whether the chaincode definition is ready to be committed
-## expect them both to have approved
-checkCommitReadiness 1 "\"Org1MSP\": true" "\"Org2MSP\": true" "\"Org3MSP\": false"
-checkCommitReadiness 2 "\"Org1MSP\": true" "\"Org2MSP\": true" "\"Org3MSP\": false"
-checkCommitReadiness 3 "\"Org1MSP\": true" "\"Org2MSP\": true" "\"Org3MSP\": false"
+  ## now approve also for org2
+  approveForMyOrg 2
 
-## query whether the chaincode is installed
-queryInstalled 3
+  ## check whether the chaincode definition is ready to be committed
+  ## expect them both to have approved
+  checkCommitReadiness 1 "\"Org1MSP\": true" "\"Org2MSP\": true" "\"Org3MSP\": false"
+  checkCommitReadiness 2 "\"Org1MSP\": true" "\"Org2MSP\": true" "\"Org3MSP\": false"
+  checkCommitReadiness 3 "\"Org1MSP\": true" "\"Org2MSP\": true" "\"Org3MSP\": false"
 
-## now approve also for org2
-approveForMyOrg 3
+  ## query whether the chaincode is installed
+  queryInstalled 3
 
-## check whether the chaincode definition is ready to be committed
-## expect them both to have approved
-checkCommitReadiness 1 "\"Org1MSP\": true" "\"Org2MSP\": true" "\"Org3MSP\": true"
-checkCommitReadiness 2 "\"Org1MSP\": true" "\"Org2MSP\": true" "\"Org3MSP\": true"
-checkCommitReadiness 3 "\"Org1MSP\": true" "\"Org2MSP\": true" "\"Org3MSP\": true"
+  ## now approve also for org2
+  approveForMyOrg 3
 
-## now that we know for sure all orgs have approved, commit the definition
-commitChaincodeDefinition 1 2 3
+  ## check whether the chaincode definition is ready to be committed
+  ## expect them both to have approved
+  checkCommitReadiness 1 "\"Org1MSP\": true" "\"Org2MSP\": true" "\"Org3MSP\": true"
+  checkCommitReadiness 2 "\"Org1MSP\": true" "\"Org2MSP\": true" "\"Org3MSP\": true"
+  checkCommitReadiness 3 "\"Org1MSP\": true" "\"Org2MSP\": true" "\"Org3MSP\": true"
 
-## query on all orgs to see that the definition committed successfully
-queryCommitted 1
-queryCommitted 2
-queryCommitted 3
+  ## now that we know for sure all orgs have approved, commit the definition
+  commitChaincodeDefinition 1 2 3
+
+  ## query on all orgs to see that the definition committed successfully
+  queryCommitted 1
+  queryCommitted 2
+  queryCommitted 3
+else
+  upgradeChaincode 1
+  upgradeChaincode 2
+  upgradeChaincode 3
+fi
 
 ## Invoke the chaincode - this does require that the chaincode have the 'initLedger'
 ## method defined

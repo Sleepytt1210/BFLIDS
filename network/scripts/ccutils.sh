@@ -6,10 +6,14 @@ function installChaincode() {
   ORG=$1
   setGlobals $ORG
   set -x
-  peer lifecycle chaincode queryinstalled --output json | jq -r 'try (.installed_chaincodes[].package_id)' | grep ^${PACKAGE_ID}$ >&log.txt
-  if test $? -ne 0; then
-    peer lifecycle chaincode install ${CC_NAME}.tar.gz >&log.txt
-    res=$?
+  if [[ "${IS_UPGRADE}" == "false" ]]; then
+    peer lifecycle chaincode queryinstalled --output json | jq -r 'try (.installed_chaincodes[].package_id)' | grep ^${PACKAGE_ID}$ >&log.txt
+    if test $? -ne 0; then
+      peer lifecycle chaincode install ${CC_NAME}.tar.gz >&log.txt
+      res=$?
+    fi
+  else
+    peer chaincode install ${CC_NAME}.tar.gz >&log.txt
   fi
   { set +x; } 2>/dev/null
   cat log.txt
@@ -164,4 +168,30 @@ function chaincodeQuery() {
   else
     fatalln "After $MAX_RETRY attempts, Query result on peer0.org${ORG} is INVALID!"
   fi
+}
+
+function upgradeChaincode() {
+  ORG=$1
+  setGlobals $ORG
+  infoln "Upgrading chaincode '${CC_NAME}' on peer0.org${ORG} on channel '$CHANNEL_NAME'..."
+  parsePeerConnectionParameters $@
+  res=$?
+  verifyResult $res "Invoke transaction failed on channel '$CHANNEL_NAME' due to uneven number of peer and org parameters "
+
+  # while 'peer chaincode' command can get the orderer endpoint from the
+  # peer (if join was successful), let's supply it directly as we know
+  # it using the "-o" option
+  set -x
+  if [ "$CC_INIT_FCN" = "NA" ]; then
+    fcn_call='-c {"function":"'${CC_INIT_FCN}'","Args":[]}'
+  else
+    fcn_call='-c {"Args":[]}'
+  fi
+  infoln "Upgrading chaincode ${CC_NAME}"
+  peer chaincode upgrade -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} -v ${CC_VERSION} -p ${CC_SRC_PATH} -l ${CC_SRC_LANGUAGE} "${PEER_CONN_PARMS[@]}" ${fcn_call} >&log.txt
+  res=$?
+  { set +x; } 2>/dev/null
+  cat log.txt
+  verifyResult $res "Upgrading chaincode on $PEERS failed "
+  successln "Upgrading chaincode ${CC_VERSION} successful on $PEERS on channel '$CHANNEL_NAME'"
 }
