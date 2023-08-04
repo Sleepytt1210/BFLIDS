@@ -31,7 +31,7 @@ checkPrerequisites
 # Ensure no network is running at the moment
 network/network.sh down
 
-network/network.sh up -ca
+network/network.sh up -ca -s couchdb
 
 network/network.sh createChannel -c fedlearn
 

@@ -60,11 +60,17 @@ curl -sSLO https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/ins
 ./install-fabric.sh --fabric-version 2.5.0 docker binary
 ```
 
+#### CouchDB
+CouchDB is a powerful database system that allows more complicated queries to be performed on world states of the ledger. It is recommended to install and enable CouchDB by specifying `ledger.state.stateDatabase = CouchDB` in [core.yaml](config/core.yaml).
+
+The default address used by couchDB is `127.0.0.1:5984`.
+
 #### jq \[Optional\]
 This command is required to perform JSON operations in a Linux shell. The installation is very simple.
 ```sh
 
 ```
+
 
 #### Others
 Follow the instructions on Hyperledger Fabric Docs to install other tools if things are not working. Click (here)[https://hyperledger-fabric.readthedocs.io/en/latest/prereqs.html].
