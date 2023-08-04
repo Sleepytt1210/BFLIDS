@@ -1,5 +1,5 @@
-# IntrusionDetection
-Intrusion Detection in a foreign domain using machine learning.
+# BFLIDS
+Blockchain-based Federated Learning Intrusion Detection (BFLIDS) is a collaborative IDS to detect attacks across foreign domains using federated learning. 
 
 ## Prerequisites
 ### Operating System
