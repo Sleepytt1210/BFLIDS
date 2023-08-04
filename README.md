@@ -68,9 +68,8 @@ The default address used by couchDB is `127.0.0.1:5984`.
 #### jq \[Optional\]
 This command is required to perform JSON operations in a Linux shell. The installation is very simple.
 ```sh
-
+sudo apt install -y jq
 ```
-
 
 #### Others
 Follow the instructions on Hyperledger Fabric Docs to install other tools if things are not working. Click (here)[https://hyperledger-fabric.readthedocs.io/en/latest/prereqs.html].
