@@ -1,7 +1,9 @@
 #!/bin/bash
 
+export RUNNING='SERVER'
+
 function printHelp() {
-    echo "`basename ${0}`:usage: [-e TEST | PROD]" 
+    echo "`basename ${0}`:usage: [-e TEST | PROD] -d" 
 }
 
 option="${1}" 
@@ -22,4 +24,8 @@ esac
 
 echo "Starting server at $(dotenv -f '../.env' get FL_S_HOST):$(dotenv -f '../.env' get FL_S_PORT)"
 
-# python server.py
+if [[ $3 ]]; then
+    DEBUG_ARGS='-m debugpy --listen 5678 --wait-for-client'
+fi
+
+python $DEBUG_ARGS server.py

@@ -1,3 +1,4 @@
+export RUNNING='CLIENT'
 export CLIENT_ID=$1
 
 echo "Starting Client $CLIENT_ID"
@@ -15,6 +16,10 @@ case "$CLIENTID" in
         ;;
 esac
 
-export C_PORT=$PORT
+if [[ "$CLIENT_ID" $eq '1' ]]; then
+    export RUNNING_SERVER=true
+fi
+
+export C_PORT="$PORT"
 
 python client.py
