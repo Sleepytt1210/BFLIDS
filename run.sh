@@ -6,9 +6,19 @@ function asOrg() {
     echo "Using ${1}"
     ORDERER_CA=${PWD}/network/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
     PEER0_ORG_CA=${PWD}/network/organizations/peerOrganizations/${1}.example.com/tlsca/tlsca.${1}.example.com-cert.pem
-    CORE_PEER_LOCALMSPID=Org1MSP
+    CORE_PEER_LOCALMSPID=${1^}MSP
     CORE_PEER_MSPCONFIGPATH=${PWD}/network/organizations/peerOrganizations/${1}.example.com/users/Admin@${1}.example.com/msp
-    CORE_PEER_ADDRESS=localhost:7051
+    case "${1}" in
+        org1 )
+            CORE_PEER_ADDRESS=localhost:7051
+            ;;
+        org2 )
+            CORE_PEER_ADDRESS=localhost:9051
+            ;;
+        org3 )
+            CORE_PEER_ADDRESS=localhost:11051
+            ;;
+    esac
     CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/network/organizations/peerOrganizations/${1}.example.com/tlsca/tlsca.${1}.example.com-cert.pem
 
     export CORE_PEER_TLS_ENABLED=true
@@ -26,7 +36,7 @@ function parsePeerConnectionParameters() {
     PEER_CONN_PARMS=()
     PEERS=""
     while [ "$#" -gt 0 ]; do
-        asOrg $1
+        asOrg "org$1"
         PEER="peer0.org$1"
         ## Set peer addresses
         if [ -z "$PEERS" ]
@@ -37,7 +47,7 @@ function parsePeerConnectionParameters() {
         fi
         PEER_CONN_PARMS=("${PEER_CONN_PARMS[@]}" --peerAddresses $CORE_PEER_ADDRESS)
         ## Set path to TLS certificate
-        CA=PEER0_ORG$1_CA
+        CA=PEER0_ORG_CA
         TLSINFO=(--tlsRootCertFiles "${!CA}")
         PEER_CONN_PARMS=("${PEER_CONN_PARMS[@]}" "${TLSINFO[@]}")
         # shift by one to get to the next organization
@@ -46,14 +56,14 @@ function parsePeerConnectionParameters() {
 }
 
 function parseArgs() {
-    
-    if [[ -z $3 ]]; then
+
+    if [[ -z "$3" ]]; then
         ARGS=''
     else
         ARGS=", $(echo $3 | sed 's/[^[:space:],]\+/"&"/g')"
     fi
 
-    if [[ -z $1 ]]; then
+    if [[ -z "$1" ]]; then
         FUNC_NAME="$2"
     else
         FUNC_NAME="$1:$2"
@@ -61,7 +71,7 @@ function parseArgs() {
 }
 
 function invoke() {
-    parseArgs $@
+    parseArgs "$@"
 
     local OLD_ORG=$ORG
     parsePeerConnectionParameters 1 2 3
@@ -72,7 +82,7 @@ function invoke() {
 }
 
 function query() {
-    asOrg $ORG
+    asOrg "$ORG"
     parseArgs "$@"
 
     echo "CONTRACT_NAME: $1, FUNCTION_NAME: $2, ARGS: $3"
@@ -94,7 +104,7 @@ function printHelp() {
     println "    -u <org_name>          Organization name (e.g. org1, org2...)." 
     println "    -a <args>              Arguments to be passed into a function, put an empty string if None." 
     println "    -h                     Print this help message."
-    println "  Example: `basename ${0}` invoke -g checkpoints -c GlobalLearningContract -f CreateCheckpoint -u org1 -a \"model_r1, model_r1_hash, ipfs.com/somehash, User1@org1.example.com, BiLSTM, 93.7, 93.7, 93.7, 1\""
+    println "  Example: `basename ${0}` invoke -g checkpoints -c GlobalLearningContract -f CreateCheckpoint -u org1 -a \"model_fs2_r1_0059f56e5034c19183adecdb2cfa9541a72022937b10e4376610ede911f6243f, 0059f56e5034c19183adecdb2cfa9541a72022937b10e4376610ede911f6243f, /ipfs/Qmex9gWyogEeGaXFEZmLWKrM67EqnUry6zQAW6f85qaV35, org1.example.com, BiLSTM, 93.7, 0.1003, 1, 2\""
 }
 
 function println() {
@@ -142,7 +152,7 @@ while getopts ":g:c:f:u:a:" opt; do
 done
 shift $((OPTIND -1))
 
-: ${CONTRACT_NAME:?'Missing contract name -c!'} ${FUNCTION_NAME:?'Missing function name -f!'}
+# : ${CONTRACT_NAME:?'Missing contract name -c!'} ${FUNCTION_NAME:?'Missing function name -f!'}
 
 case "$COMMAND" in
     invoke)
