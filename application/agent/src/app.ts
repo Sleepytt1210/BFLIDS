@@ -28,7 +28,6 @@ const main = async () => {
                     code: ACCEPTED,
                     message: getReasonPhrase(ACCEPTED)
                 },
-                modelID: checkpointData.id,
                 timestamp: new Date().toISOString()
             });
         } catch (err) {
@@ -83,18 +82,18 @@ const main = async () => {
             isConnected(gateway, network, contract);
             let data; 
             switch (cpID) {
-                case 'all':{
-                    data = await getAllCheckpoints(contract);
-                    break;
-                }
-                case 'latest' || 'latestcheckpoint':{
-                    data = await getLatestCheckpoint(contract);
-                    break;
-                }
-                default:{
-                    data = await readCheckpointByID(contract, cpID);
-                    break;
-                }
+            case 'all':{
+                data = await getAllCheckpoints(contract);
+                break;
+            }
+            case 'latest' || 'latestcheckpoint':{
+                data = await getLatestCheckpoint(contract);
+                break;
+            }
+            default:{
+                data = await readCheckpointByID(contract, cpID);
+                break;
+            }
             } 
             return resp.status(OK).json({
                 status: {
@@ -112,14 +111,18 @@ const main = async () => {
                         code: NOT_FOUND,
                         message: getReasonPhrase(NOT_FOUND)
                     },
+                    details: err?.details || 'none',
                     timestamp: new Date().toISOString()
                 })
             }
 
             return resp.status(INTERNAL_SERVER_ERROR).json({
-                status: getReasonPhrase(INTERNAL_SERVER_ERROR),
+                status: {
+                    code: INTERNAL_SERVER_ERROR,
+                    message: getReasonPhrase(INTERNAL_SERVER_ERROR)
+                },
                 reason: `${err.name}: ${err.message}`,
-                details: `${JSON.stringify(err?.details) || 'none'}`,
+                details: err?.details || 'none',
                 timestamp: new Date().toISOString()
             })
         }
@@ -133,7 +136,6 @@ const main = async () => {
         const clientID = req.query.clID as string;
 
         try {            
-            const {channelName, chaincodeName, contractName, client, checkpointData} = req.body as RequestArgs;
             console.log(`Requesting latest checkpoint by client ${clientID}`);
             const {gateway, network, contract} = await setupConnection(channelName, chaincodeName, contractName);
             isConnected(gateway, network, contract);
@@ -148,9 +150,12 @@ const main = async () => {
         } catch (err) {
             console.error(err);
             return resp.status(INTERNAL_SERVER_ERROR).json({
-                status: getReasonPhrase(INTERNAL_SERVER_ERROR),
+                status: {
+                    code: INTERNAL_SERVER_ERROR,
+                    message: getReasonPhrase(INTERNAL_SERVER_ERROR)
+                },
                 reason: `${err.name}: ${err.message}`,
-                details: `${JSON.stringify(err?.details) || 'none'}`,
+                details: err?.details || 'none',
                 timestamp: new Date().toISOString()
             })
         }
