@@ -4,39 +4,49 @@ from functools import reduce
 from typing import Dict, List, Tuple
 
 from flwr.common.typing import Scalar, Parameters
+from flwr.server import History
 from utils.requestor import post_model, query_model, response_handler
-from utils.config import EXPRESS_HOST, EXPRESS_PORT
+from utils.config import CHECKPOINTS_REQ_URL
 import json
 from utils.saver import hash_params
 
-GLOBAL_CHECKPOINTS_REQ_URL=f"http://{EXPRESS_HOST}:{EXPRESS_PORT}/transactions/checkpoint/" 
 
 CHANNEL_NAME="fedlearn"
 CHAINCODE_NAME="checkpoints"
 CONTRACT_NAME="GlobalLearningContract"
 ALGORITHM="BiLSTM"
 
-class BFedHistory:
+class BFedHistory(History):
     """History class for training and/or evaluation metrics collection."""
 
     def __init__(self, client_name, algorithm) -> None:
         self.client_name = client_name
-        result = query_model(f"{GLOBAL_CHECKPOINTS_REQ_URL}query/all", CHANNEL_NAME, CHAINCODE_NAME, CONTRACT_NAME, client_name)
-        latest_checkpoint = query_model(f"{GLOBAL_CHECKPOINTS_REQ_URL}query/latestcheckpoint", CHANNEL_NAME, CHAINCODE_NAME, CONTRACT_NAME, client_name)[0]
-        ledger_records: List[Dict[str, str]] = json.load(result)
-        self.losses_distributed: List[Tuple[int, float]] = map(lambda x: x["Loss"], ledger_records)
-        self.metrics_distributed: Dict[str, List[Tuple[int, Scalar]]] = map(lambda x: x["CurAccuracy"], ledger_records)
-        self.current_fed_session: int = latest_checkpoint["FedSession"] + 1
+        self.latest_checkpoint = query_model(f"{CHECKPOINTS_REQ_URL}query/latestcheckpoint", CHANNEL_NAME, CHAINCODE_NAME, CONTRACT_NAME, client_name)[0]
+        self.losses_centralized: List[Tuple[int, float]] = []
+        self.metrics_distributed_fit: Dict[str, List[Tuple[int, Scalar]]] = {}
+        self.metrics_centralized: Dict[str, List[Tuple[int, Scalar]]] = {}
+        self.current_fed_session: int = self.latest_checkpoint["FedSession"] + 1
         self.algorithm: str = algorithm
 
     def add_loss_distributed(self, server_round: int, loss: float) -> None:
-        """Add one loss entry (from distributed evaluation)."""
+        """Add one loss entry (from distributed evaluation).
+           Data is in the form of (server_round, loss)
+        Args:
+            server_round (int): Current communication round
+            loss (float): Aggregated loss
+        """
         self.losses_distributed.append((server_round, loss))
 
     def add_metrics_distributed(
         self, server_round: int, metrics: Dict[str, Scalar]
     ) -> None:
-        """Add metrics entries (from distributed evaluation)."""
+        """Add metrics entries (from distributed evaluation).
+           Each metric is in the form of {metric_key: (server_round, value)}
+
+        Args:
+            server_round (int): Current communication round
+            metrics (Dict[str, Scalar]): Distributed metrics where key is the name of metric and value is its value
+        """
         for key in metrics:
             # if not (isinstance(metrics[key], float) or isinstance(metrics[key], int)):
             #     continue  # ignore non-numeric key/value pairs
@@ -50,7 +60,7 @@ class BFedHistory:
         """Post a global model to the hyperledger fabric ledger via a smart contract"""
         hash = hash_params(parameters)
         model_id = f"model_{hash}"
-        resp = post_model(req_url=f"{GLOBAL_CHECKPOINTS_REQ_URL}create",
+        resp = post_model(req_url=f"{CHECKPOINTS_REQ_URL}create",
                    id=model_id,
                    hash=hash,
                    url=ipfs_url,
@@ -91,8 +101,22 @@ class BFedHistory:
                     for server_round, loss in self.losses_distributed
                 ],
             )
+        if self.losses_centralized:
+            rep += "History (loss, centralized):\n" + reduce(
+                lambda a, b: a + b,
+                [
+                    f"\tround {server_round}: {loss}\n"
+                    for server_round, loss in self.losses_centralized
+                ],
+            )
+        if self.metrics_distributed_fit:
+            rep += "History (metrics, distributed, fit):\n" + str(
+                self.metrics_distributed_fit
+            )
         if self.metrics_distributed:
             rep += "History (metrics, distributed, evaluate):\n" + str(
                 self.metrics_distributed
             )
+        if self.metrics_centralized:
+            rep += "History (metrics, centralized):\n" + str(self.metrics_centralized)
         return rep

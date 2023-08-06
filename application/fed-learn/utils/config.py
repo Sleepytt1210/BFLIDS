@@ -34,6 +34,8 @@ NUM_ROUNDS = int(env_def('NUM_ROUNDS', 1))
 EXPRESS_HOST = env_def("EXPRESS_HOST", "0.0.0.0")
 EXPRESS_PORT = env_def("EXPRESS_PORT", 30027)
 
+CHECKPOINTS_REQ_URL=f"http://{EXPRESS_HOST}:{EXPRESS_PORT}/transactions/checkpoint/" 
+
 """Client ENV_VARS"""
 
 CLIENT_ENV = dict()
@@ -48,7 +50,7 @@ if os.environ['RUNNING'] == 'CLIENT':
     CLIENT_ENV["KEY_DIRECTORY_PATH"] = env_def("KEY_DIRECTORY_PATH", os.path.join(crypto_path, 'users', f'User1@{peer_domain}', 'msp', 'keystore')) 
     CLIENT_ENV["CERT_PATH"] = env_def("CERT_PATH", os.path.join(crypto_path, 'users', f'User1@{peer_domain}', 'msp', 'signcerts', 'cert.pem'))
     CLIENT_ENV["TLS_CERT_PATH"] = env_def("TLS_CERT_PATH", os.path.join(crypto_path, 'peers', f'peer0.{peer_domain}', 'tls', 'ca.crt'))
-    CLIENT_ENV["PEER_HOST_ALIAS"] = peer_domain
+    CLIENT_ENV["PEER_HOST_ALIAS"] = env_def("PEER_HOST_ALIAS", peer_domain)
     CLIENT_ENV["HOST"] = env_def("C_HOST", "0.0.0.0")
     CLIENT_ENV["PORT"] = env_def("C_PORT", str(7051 + (1000 * (int(CID) - 1))))
     CLIENT_ENV["EXPRESS_HOST"] = env_def("EXPRESS_HOST", "0.0.0.0")
