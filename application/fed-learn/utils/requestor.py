@@ -26,7 +26,7 @@ def post_model(req_url, id, hash, url, owner, algorithm, accuracy, loss, round, 
         json=data
     )
 
-    return response_handler({"status_code": resp.status_code, "result": resp.json()}, fed_session)
+    return response_handler({"status_code": resp.status_code, "content": resp.json()}, fed_session)
 
 def query_model(req_url, channelName, chaincodeName, contractName, client):
     try:
@@ -39,21 +39,44 @@ def query_model(req_url, channelName, chaincodeName, contractName, client):
                 'clID': client
             }
         )
-        return response_handler({"status_code": resp.status_code, "result": resp.json()})
+        return response_handler({"status_code": resp.status_code, "content": resp.json()})
     except:
         return None
     
-def error_handler(err, fed_session):
-    msg: str = err[0]["message"]
+def error_handler(err, fed_session=None):
+    """HTTP error handler function. Used to handle error messages received from the API Server.
+
+    Args:
+        err (status: {
+                    code: int,
+                    message: str
+                },
+                reason: str,
+                details: json || 'none',
+                timestamp: str
+            ): The error content returned by the API server in json format.
+        fed_session (int): Currently running fed_session. Defaults to None.
+    """
+    msg: str = err["details"][0]["message"]
     if "CP400" in msg:
+        print(err["reason"])
         print(msg[msg.index("CP400"):])
         print(f"Federated learning session {fed_session} will now abort!")
         exit(400)
 
 def response_handler(response, fed_session=None):
+    """Handle response sent from NodeJS gateway
+
+    Args:
+        response ({status_code: int, content: json}): The http status code of the response and the full content sent back by the API Server.  
+        fed_session (int, optional): The current federated learning session number for model creation. Defaults to None.
+
+    Returns:
+        Result (json): The JSON data which could be the queried item or any http response messages. 
+    """
     if response["status_code"] < 200 or response["status_code"] > 210 :
-        error_handler(response["result"]["details"], fed_session)
-    return response["result"]["result"]
+        error_handler(response["content"], fed_session)
+    return response["content"]["result"]
 
 
 # if __name__ == '__main__':
