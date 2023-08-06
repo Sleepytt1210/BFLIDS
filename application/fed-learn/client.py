@@ -1,4 +1,7 @@
 import flwr as fl
+from flwr.common.typing import Config, Scalar
+from typing import Dict
+
 import tensorflow as tf
 import models.net as net
 from data.loader import load_data
@@ -26,19 +29,27 @@ client_ports = {
 
 class BFLClient(fl.client.NumPyClient):
 
-    def __init__(self, cid: int, model: tf.keras.Model, x_train, y_train, x_test, y_test, running_server: bool = False) -> None:
+    def __init__(self, cid: int, model: tf.keras.Model, x_train, y_train, x_test, y_test) -> None:
         self.model = model
         self.cid = cid
+        self.domain_name = cfg.CLIENT_ENV["PEER_HOST_ALIAS"] or f"org{cid}.example.com"
         self.x_train = x_train
         self.y_train = y_train
         self.x_test = x_test
         self.y_test = y_test
-        self.running_server = running_server
         
         self.gateway_ps: Popen = None
         self.ipfs_daemon: Popen = None
-        self.ipfs_client: ipfshttpclient.client.Client = None
+        self._ipfs_client: ipfshttpclient.client.Client = None
         self.__setup()
+
+    def get_ipfs_client(self):
+        if not self._ipfs_client:
+            self._ipfs_client = ipfshttpclient.connect()
+        return self._ipfs_client
+
+    def get_properties(self, config: Config) -> Dict[str, Scalar]:
+        return {"ipfs_client": self.get_ipfs_client(), "cid": self.cid, "domain_name": f"peer0.org{self.cid}.example.com"}
 
     def get_parameters(self, config):
         return self.model.get_weights()
@@ -53,6 +64,8 @@ class BFLClient(fl.client.NumPyClient):
         
         # Post local model to IPFS
         server_round = config["server_round"]
+        fed_session = config["fed_session"]
+
         print(f"[CLIENT {self.cid}]: Uploading model for server round {server_round}")
         params = self.model.get_weights()
         hash = hash_params(params)
@@ -63,7 +76,7 @@ class BFLClient(fl.client.NumPyClient):
 
         owner = self.env_vars['PEER_HOST_ALIAS']
         request_url = f"http://{self.env_vars['EXPRESS_HOST']}:{self.env_vars['EXPRESS_PORT']}/transactions/checkpoint/create"
-        post_model(
+        resp = post_model(
             req_url=request_url,
             id=id,
             hash=hash,
@@ -71,8 +84,9 @@ class BFLClient(fl.client.NumPyClient):
             owner=owner,
             round=server_round,
             algorithm="BiLSTM",
-            loss=loss,
             accuracy=accuracy,
+            loss=loss,
+            fed_session=fed_session,
             channel_name=CHANNEL_NAME,
             chaincode_name=CHAINCODE_NAME,
             contract_name=CONTRACT_NAME,
@@ -100,7 +114,7 @@ class BFLClient(fl.client.NumPyClient):
 
         self.env_vars = self.__setup_env()
 
-        if not self.running_server and cfg.WORK_ENV == 'PROD':
+        if cfg.WORK_ENV == 'PROD':
             print(f"[CLIENT {self.cid}]: Starting blockchain gateway")
             nodejsPath = os.path.abspath(os.path.join(os.getcwd(), '..', 'agent'))
             self.gateway_ps = Popen(
@@ -119,13 +133,13 @@ class BFLClient(fl.client.NumPyClient):
 
         time.sleep(3)
 
-        self.ipfs_client = ipfshttpclient.Client(addr=f"/ip4/{self.env_vars['IPFS_HOST']}/tcp/{int(self.env_vars['IPFS_API_PORT'])}/http")
-        ipfs_id = dict(self.ipfs_client.id())
+        self._ipfs_client = ipfshttpclient.Client(addr=f"/ip4/{self.env_vars['IPFS_HOST']}/tcp/{int(self.env_vars['IPFS_API_PORT'])}/http")
+        ipfs_id = dict(self._ipfs_client.id())
         
         s_target = self.env_vars["IPFS_SWARM_TARGET"]
         if ipfs_id['Addresses'][0] != s_target:
             print(f"[CLIENT {self.cid}]: Connecting to {s_target}")
-            self.ipfs_client.swarm.connect(s_target)
+            self._ipfs_client.swarm.connect(s_target)
 
     def __setup_env(self):
         env_vars = cfg.CLIENT_ENV
