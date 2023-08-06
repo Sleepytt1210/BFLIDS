@@ -10,18 +10,21 @@ fi
 
 function setup() {
 
+    SCRIPT_DIR=$(dirname $(realpath -s $0))
 
     if [[ $1 ]]; then
+        id=$1 
         ORG="org${1}"
-        SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
         echo "Setting up IPFS for $ORG" && IPFS_PATH=${SCRIPT_DIR}/../../ipfs-conf/${ORG}.example.com
+    else
+        id=1
     fi
 
     if [[ ! -d "$IPFS_PATH" ]]; then
-        echo "Initializing IPFS at $IPFS_PATH" && mkdir $IPFS_PATH && cp ${PWD}/../../ipfs-conf/swarm.key "${IPFS_PATH}" && ipfs init
+        echo "Creating directory at $IPFS_PATH" && mkdir "$IPFS_PATH" && cp ${SCRIPT_DIR}/../../ipfs-conf/swarm.key "${IPFS_PATH}" && ipfs init
     fi
 
-    OFFSET=$(( x=$1-1, 1000*x ))
+    OFFSET=$(( x=$id-1, 1000*x ))
     API_PORT=$(( $BASE_API_PORT + $OFFSET ))
 
     if [[ -z "$IPFS_GATEWAY_PORT" ]]; then
