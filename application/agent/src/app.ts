@@ -1,8 +1,8 @@
 import express, { Request, Response } from 'express';
-import * as config from '../utils/config'
-import { Contract, Gateway, Network } from '@hyperledger/fabric-gateway';
+import * as config from './utils/config'
+import { Contract, Gateway, Network } from 'fabric-network';
 import { getContract, getNetwork, getGateway, createCheckpoint, readCheckpointByID, getAllCheckpoints, getLatestCheckpoint } from './gateway';
-import { ClientProfile, ConnectionProfile } from './gatewayOptions';
+import { ClientProfile, KeysProfile } from './gatewayOptions';
 import { getReasonPhrase, StatusCodes } from 'http-status-codes';
 import { CheckpointNotFoundError, handleError } from './errors';
 import { RequestArgs } from './interface';
@@ -16,10 +16,10 @@ const main = async () => {
     router.post('/transactions/checkpoint/create', async (req: Request, resp: Response) => {
 
         try {
-            const {channelName, chaincodeName, contractName, client, checkpointData} = req.body as RequestArgs;
-            console.log(`Creating new checkpoint with args ${JSON.stringify(checkpointData)} from client ${client}`);
+            const {channelName, chaincodeName, contractName, clientName, checkpointData} = req.body as RequestArgs;
+            console.log(`Creating new checkpoint with args ${JSON.stringify(checkpointData)} from client ${clientName}`);
             
-            const {gateway, network, contract} = await setupConnection(channelName, chaincodeName, contractName);
+            const {gateway, network, contract} = await setupConnection(clientName, channelName, chaincodeName, contractName);
             isConnected(gateway, network, contract);
             console.log('Gateway connection is setup.')
             await createCheckpoint(contract, checkpointData.id, checkpointData.hash, checkpointData.url, checkpointData.owner, checkpointData.algorithm, checkpointData.cAccuracy, checkpointData.loss, checkpointData.round, checkpointData.fedSession);
@@ -28,6 +28,7 @@ const main = async () => {
                     code: ACCEPTED,
                     message: getReasonPhrase(ACCEPTED)
                 },
+                result: `Model ${checkpointData.id} created at ${contractName}`,
                 timestamp: new Date().toISOString()
             });
         } catch (err) {
@@ -52,6 +53,7 @@ const main = async () => {
                         message: getReasonPhrase(BAD_REQUEST)
                     },
                     reason: 'Invalid arguments!',
+                    details: err?.details || 'none',
                     timestamp: new Date().toISOString()
                 })
             }
@@ -73,27 +75,31 @@ const main = async () => {
         const channelName = req.query.chn as string;
         const chaincodeName = req.query.ccn as string;
         const contractName = req.query.ctn as string;
-        const clientID = req.query.clID as string;
+        const clientName = req.query.clID as string;
     
-        console.log(`Requesting checkpoint ${cpID} of client ${clientID}`);
+        console.log(`Requesting checkpoint ${cpID} by client ${clientName}`);
 
         try {
-            const {gateway, network, contract} = await setupConnection(channelName, chaincodeName, contractName);
+            const {gateway, network, contract} = await setupConnection(clientName, channelName, chaincodeName, contractName);
             isConnected(gateway, network, contract);
             let data; 
             switch (cpID) {
-            case 'all':{
-                data = await getAllCheckpoints(contract);
-                break;
-            }
-            case 'latest' || 'latestcheckpoint':{
-                data = await getLatestCheckpoint(contract);
-                break;
-            }
-            default:{
-                data = await readCheckpointByID(contract, cpID);
-                break;
-            }
+                case 'all':{
+                    data = await getAllCheckpoints(contract);
+                    break;
+                }
+                case 'latest':{
+                    data = await getLatestCheckpoint(contract);
+                    break;
+                }
+                case 'latestcheckpoint': {
+                    data = await getLatestCheckpoint(contract);
+                    break;
+                }
+                default:{
+                    data = await readCheckpointByID(contract, cpID);
+                    break;
+                }
             } 
             return resp.status(OK).json({
                 status: {
@@ -111,6 +117,7 @@ const main = async () => {
                         code: NOT_FOUND,
                         message: getReasonPhrase(NOT_FOUND)
                     },
+                    reason: `${err.name}: ${err.message}`,
                     details: err?.details || 'none',
                     timestamp: new Date().toISOString()
                 })
@@ -128,56 +135,21 @@ const main = async () => {
         }
     })
 
-    router.get('/query/checkpoint/latestcheckpoint', async (req: Request, resp: Response) => {
-        
-        const channelName = req.query.chn as string;
-        const chaincodeName = req.query.ccn as string;
-        const contractName = req.query.ctn as string;
-        const clientID = req.query.clID as string;
-
-        try {            
-            console.log(`Requesting latest checkpoint by client ${clientID}`);
-            const {gateway, network, contract} = await setupConnection(channelName, chaincodeName, contractName);
-            isConnected(gateway, network, contract);
-            const data =  await getLatestCheckpoint(contract);
-            return resp.status(OK).json({
-                status: {
-                    code: OK,
-                    message: getReasonPhrase(OK)
-                },
-                result: data
-            });
-        } catch (err) {
-            console.error(err);
-            return resp.status(INTERNAL_SERVER_ERROR).json({
-                status: {
-                    code: INTERNAL_SERVER_ERROR,
-                    message: getReasonPhrase(INTERNAL_SERVER_ERROR)
-                },
-                reason: `${err.name}: ${err.message}`,
-                details: err?.details || 'none',
-                timestamp: new Date().toISOString()
-            })
-        }
+    router.get('/health', (req: Request, resp: Response) => {
+        return resp.status(OK).json({
+            status: {
+                code: OK,
+                message: getReasonPhrase(OK)
+            }
+        })
     })
 
-    async function setupConnection(channelName: string, chaincodeName: string, contractName: string): Promise<{gateway: Gateway, network: Network, contract: Contract}> {
-        const clientProfile: ClientProfile = {
-            org: config.org,
-            mspID: config.mspID,
-            peerHost: config.peerHost,
-            peerHostAlias: config.peerHostAlias,
-            port: config.port,
-            peerEndpoint: config.peerEndpoint
-        }
+    async function setupConnection(clientName: string, channelName: string, chaincodeName: string, contractName: string): Promise<{gateway: Gateway, network: Network, contract: Contract}> {
+        const clientProfile: ClientProfile = config.getClientProfile(clientName)
 
-        const connectionProfile: ConnectionProfile = {
-            certPath: config.certPath,
-            keyPath: config.keyPath,
-            tlsCertPath: config.tlsCertPath
-        }
+        const keysProfile: KeysProfile = config.getKeysProfile(clientName) 
 
-        const gateway = await getGateway(connectionProfile, clientProfile);
+        const gateway = await getGateway(keysProfile, clientProfile);
 
         const network = await getNetwork(gateway, channelName);
 

@@ -26,7 +26,7 @@ export interface RequestArgs {
 
     contractName: string;
 
-    client: string;
+    clientName: string;
 
     checkpointData: CheckpointArgs;
 }

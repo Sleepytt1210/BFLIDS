@@ -4,35 +4,31 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as grpc from '@grpc/grpc-js';
-import { connect, Contract, Gateway, Network, Identity, Signer, signers } from '@hyperledger/fabric-gateway';
-import * as crypto from 'crypto';
+import { Gateway, Wallets, GatewayOptions, X509Identity, Network, Contract } from 'fabric-network';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { TextDecoder } from 'util';
-import { ConnectionProfile, ClientProfile } from './gatewayOptions'
+import { KeysProfile, ClientProfile } from './gatewayOptions'
+import { getConnectionProfile } from './utils/config';
 
 const utf8Decoder = new TextDecoder();
+const connectionProfileFileName = "./connectionProfile.json"  
+const walletPath = path.resolve("./wallets")
 
-async function newGrpcConnection(tlsCertPath: string, peerEndpoint: string, peerHostAlias: string): Promise<grpc.Client> {
-    const tlsRootCert = await fs.readFile(tlsCertPath);
-    const tlsCredentials = grpc.credentials.createSsl(tlsRootCert);
-    return new grpc.Client(peerEndpoint, tlsCredentials, {
-        'grpc.ssl_target_name_override': peerHostAlias,
-    });
-}
-
-async function newIdentity(mspId: string, certPath: string): Promise<Identity> {
-    const credentials = await fs.readFile(certPath);
-    return { mspId, credentials };
-}
-
-async function newSigner(keyDirectoryPath: string): Promise<Signer> {
+async function newIdentity(mspId: string, certPath: string, keyDirectoryPath: string): Promise<X509Identity> {
     const files = await fs.readdir(keyDirectoryPath);
     const keyPath = path.resolve(keyDirectoryPath, files[0]);
     const privateKeyPem = await fs.readFile(keyPath);
-    const privateKey = crypto.createPrivateKey(privateKeyPem);
-    return signers.newPrivateKeySigner(privateKey);
+    
+    const identity: X509Identity = {
+        credentials: {
+            certificate: (await fs.readFile(certPath)).toString('utf-8'),
+            privateKey: privateKeyPem.toString('utf-8'),
+        },
+        mspId: mspId,
+        type: 'X.509',
+    };
+    return identity
 }
 
 /**
@@ -55,7 +51,7 @@ export async function getAllCheckpoints(contract: Contract): Promise<void> {
 
     const resultBytes = await contract.evaluateTransaction('GetAllCheckpoints');
 
-    const resultJson = utf8Decoder.decode(resultBytes);
+    const resultJson = resultBytes.toString('utf-8');
     const result = JSON.parse(resultJson);
     return result;
 }
@@ -113,27 +109,23 @@ export const getContract = async (network: Network, chaincodeName: string, contr
     return contract;
 }
 
-export const getGateway = async (connectionProfile: ConnectionProfile, clientProfile: ClientProfile) => {
-    const client = await newGrpcConnection(connectionProfile.tlsCertPath, clientProfile.peerEndpoint, clientProfile.peerHostAlias);
+export const getGateway = async (keysProfile: KeysProfile, clientProfile: ClientProfile) => {
+    
+    const wallet = await Wallets.newFileSystemWallet(walletPath);
+    const clientName = clientProfile.identity
+    const connectionProfile = await getConnectionProfile(clientProfile.peerDomain)
 
-    const gateway = connect({
-        client,
-        identity: await newIdentity(clientProfile.mspID, connectionProfile.certPath),
-        signer: await newSigner(connectionProfile.keyPath),
-        // Default timeouts for different gRPC calls
-        evaluateOptions: () => {
-            return { deadline: Date.now() + 5000 }; // 5 seconds
-        },
-        endorseOptions: () => {
-            return { deadline: Date.now() + 15000 }; // 15 seconds
-        },
-        submitOptions: () => {
-            return { deadline: Date.now() + 5000 }; // 5 seconds
-        },
-        commitStatusOptions: () => {
-            return { deadline: Date.now() + 60000 }; // 1 minute
-        },
-    });
+    if (! (await wallet.get(clientName))) {
+        await wallet.put(clientName, await newIdentity(clientProfile.mspID, keysProfile.certPath, keysProfile.keyPath))
+    }
+
+    const gatewayOptions: GatewayOptions = {
+        identity: clientName,
+        wallet,
+    };
+
+    const gateway = new Gateway();
+    await gateway.connect(connectionProfile, gatewayOptions)
 
     return gateway;
 }

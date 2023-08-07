@@ -1,6 +1,6 @@
 {
     "name": "Hyperledger Fabric Gateway for BFLIDS",
-    "version": "1.0.0",
+    "version": "1.5.0",
     "description": "Blockchain-based Federated Learning implemented in typeScript using fabric-gateway",
     "main": "dist/index.js",
     "typings": "dist/index.d.ts",
@@ -14,7 +14,7 @@
         "lint": "tslint -c tslint.json 'src/**/*.ts",
         "prepare": "npm run build",
         "pretest": "npm run lint",
-        "start": "npm run build && node dist/src/app.js"
+        "start": "node dist/app.js"
     },
     "engineStrict": true,
     "author": "Dylon Wong",
@@ -25,10 +25,10 @@
         "@typescript-eslint/eslint-plugin": "^5.60.1",
         "@typescript-eslint/parser": "^5.60.1",
         "eslint": "^8.43.0",
+        "fabric-network": "^2.2.18",
         "typescript": "^5.1.6"
     },
     "dependencies": {
-        "@hyperledger/fabric-gateway": "^1.3.0",
         "express": "^4.18.2",
         "http-status-codes": "^2.2.0"
     }

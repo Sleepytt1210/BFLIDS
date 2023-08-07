@@ -31,6 +31,8 @@ checkPrerequisites
 # Ensure no network is running at the moment
 network/network.sh down
 
+rm -rf ./application/agent/wallets
+
 network/network.sh up -ca -s couchdb
 
 network/network.sh createChannel -c fedlearn

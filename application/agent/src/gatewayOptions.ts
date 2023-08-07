@@ -1,14 +1,15 @@
-export interface ConnectionProfile {
+export interface KeysProfile {
     certPath: string;
     keyPath: string;
     tlsCertPath: string;
 }
 
 export interface ClientProfile {
-    org: string;
+    identity: string;
     mspID: string;
     peerHost: string;
     peerHostAlias: string;
     port: number;
     peerEndpoint: string;
+    peerDomain: string;
 }
