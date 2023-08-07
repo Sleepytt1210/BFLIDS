@@ -1,0 +1,26 @@
+[      
+    { 
+        "query": "GlobalLearningContract:GetAllCheckpoints",
+        "args": []   
+    },
+    {
+        "invoke": "GlobalLearningContract:CreateCheckpoint",
+        "args": ["model_rc2_r2", "model_rc2_r2_hash", "/ipfs/somehash22", "HP.manchester.ac.uk", "BiLSTM", "96.5", "0.1027", "2", "2"]
+    },
+    {
+        "invoke": "GlobalLearningContract:InitLedger",
+        "args": []
+    },
+    {
+        "query": "GlobalLearningContract:QueryCheckpointsByOwner",
+        "args": ["HP.example.com"]
+    },
+    {
+        "query": "GlobalLearningContract:GetLatestCheckpoint",
+        "args": []
+    },
+    {
+        "query": "GlobalLearningContract:GetHighestAccCheckpoint",
+        "args": [0]
+    }
+]
