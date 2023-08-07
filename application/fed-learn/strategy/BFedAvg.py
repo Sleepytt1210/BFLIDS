@@ -1,5 +1,5 @@
 from typing import List, Tuple 
-from flwr.common import Parameters, FitIns, GetPropertiesIns
+from flwr.common import Parameters, FitIns
 from flwr.server import ClientManager
 from flwr.server.client_proxy import ClientProxy
 from flwr.server.strategy import FedAvg

@@ -3,15 +3,15 @@
 export RUNNING='SERVER'
 
 function printHelp() {
-    echo "`basename ${0}`:usage: [-e TEST | PROD] -d" 
+    echo "`basename ${0}`:usage: [-e TEST | PROD | SIM] -d" 
 }
 
 option="${1}" 
 case ${option} in 
    -e)  export WORK_ENV="${2}" 
         case "${WORK_ENV}" in
-            TEST | PROD) echo "Set working environment to ${WORK_ENV}";;
-            *) echo "Only value TEST or PROD are accepted!"
+            TEST | PROD | SIM ) echo "Set working environment to ${WORK_ENV}";;
+            *) echo "Only value TEST or PROD or SIM are accepted!"
             exit 1
             ;;
         esac

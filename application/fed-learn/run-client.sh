@@ -4,7 +4,7 @@ export CLIENT_ID=$1
 echo "Starting Client $CLIENT_ID"
 export C_HOST='0.0.0.0'
 
-case "$CLIENTID" in
+case "$CLIENT_ID" in
     1 ) 
         PORT='7051'
         ;;
@@ -16,7 +16,7 @@ case "$CLIENTID" in
         ;;
 esac
 
-if [[ "$CLIENT_ID" $eq '1' ]]; then
+if [[ "$CLIENT_ID" == '1' ]]; then
     export RUNNING_SERVER=true
 fi
 

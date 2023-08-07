@@ -1,12 +1,12 @@
 import requests
 
 def post_model(req_url, id, hash, url, owner, algorithm, accuracy, loss, round, fed_session, channel_name, chaincode_name, contract_name, client):
-
+    
     data = {
         "channelName": channel_name,
         "chaincodeName": chaincode_name,
         "contractName": contract_name,
-        "client": client,
+        "clientName": client,
         "checkpointData": {
             "id": id,
             "hash": hash,
@@ -17,8 +17,10 @@ def post_model(req_url, id, hash, url, owner, algorithm, accuracy, loss, round, 
             "loss": loss,
             "round": round,
             "fedSession": fed_session,
-        }
+        },
     }
+
+    print(f"Posting model: {data}")
 
     resp = requests.post(
         url=req_url,
@@ -26,7 +28,7 @@ def post_model(req_url, id, hash, url, owner, algorithm, accuracy, loss, round, 
         json=data
     )
 
-    return response_handler({"status_code": resp.status_code, "content": resp.json()}, fed_session)
+    return response_handler(dict(status_code=resp.status_code, content=resp.json()), fed_session)
 
 def query_model(req_url, channelName, chaincodeName, contractName, client):
     try:
@@ -41,7 +43,7 @@ def query_model(req_url, channelName, chaincodeName, contractName, client):
         )
         return response_handler({"status_code": resp.status_code, "content": resp.json()})
     except:
-        return None
+        return []
     
 def error_handler(err, fed_session=None):
     """HTTP error handler function. Used to handle error messages received from the API Server.
@@ -57,12 +59,18 @@ def error_handler(err, fed_session=None):
             ): The error content returned by the API server in json format.
         fed_session (int): Currently running fed_session. Defaults to None.
     """
-    msg: str = err["details"][0]["message"]
+    msg: str = err["details"]
+    print(err["reason"])
+    if err["status"]["code"] == 404:
+        print("The requested URL does not exist!")
     if "CP400" in msg:
-        print(err["reason"])
         print(msg[msg.index("CP400"):])
         print(f"Federated learning session {fed_session} will now abort!")
-        exit(400)
+        
+    exit(1)
+
+def is_node_running(req_url):
+    return (requests.get(req_url)).status_code == requests.codes.ok
 
 def response_handler(response, fed_session=None):
     """Handle response sent from NodeJS gateway
@@ -74,31 +82,34 @@ def response_handler(response, fed_session=None):
     Returns:
         Result (json): The JSON data which could be the queried item or any http response messages. 
     """
+    print(str(response))
     if response["status_code"] < 200 or response["status_code"] > 210 :
         error_handler(response["content"], fed_session)
     return response["content"]["result"]
 
 
-# if __name__ == '__main__':
-#     # resp = post_model("http://localhost:30027/transactions/checkpoint/create", 
-#     #            "model_fs2_r1_0059f56e5034c19183adecdb2cfa9541a72022937b10e4376610ede911f6243f",
-#     #            "0059f56e5034c19183adecdb2cfa9541a72022937b10e4376610ede911f6243f", 
-#     #            "/ipfs/Qmex9gWyogEeGaXFEZmLWKrM67EqnUry6zQAW6f85qaV35", 
-#     #            "org1.example.com", 
-#     #            "BiLSTM", 
-#     #            "95.7", 
-#     #            "0.0210", 
-#     #            "1", 
-#     #            "2",
-#     #            "fedlearn",
-#     #            "checkpoints",
-#     #            "GlobalLearningContract",
-#     #            "org1.example.com")
+if __name__ == '__main__':
+    # resp = post_model("http://localhost:30027/transactions/checkpoint/create", 
+    #            "model_fs2_r1_0059f56e5034c19183adecdb2cfa9541a72022937b10e4376610ede911f6243f",
+    #            "0059f56e5034c19183adecdb2cfa9541a72022937b10e4376610ede911f6243f", 
+    #            "/ipfs/Qmex9gWyogEeGaXFEZmLWKrM67EqnUry6zQAW6f85qaV35", 
+    #            "User1@org1.example.com", 
+    #            "BiLSTM", 
+    #            "95.7", 
+    #            "0.0210", 
+    #            "1", 
+    #            "2",
+    #            "fedlearn",
+    #            "checkpoints",
+    #            "GlobalLearningContract",
+    #            "User1@org1.example.com")
     
-#     # resp = query_model("http://localhost:30027/query/checkpoint/model_fs1_r3_80f298f00b4dc58a9ce9b5d8a400c03eeeb2fe82ad19b3c393dc8cc1a27d8327", "fedlearn",
-#     #            "checkpoints",
-#     #            "GlobalLearningContract",
-#     #            "org1.example.com")
+    resp = query_model("http://localhost:30027/query/checkpoint/latest", "fedlearn",
+               "checkpoints",
+               "GlobalLearningContract",
+               "User1@org1.example.com")
+    
+    print(resp)
     
 #     # resp = query_model(f"http://localhost:30027/query/checkpoint/latest", "fedlearn", "checkpoints", "GlobalLearningContract", "org1.example.com")
 #     # print(type(resp[0]["FedSession"]))

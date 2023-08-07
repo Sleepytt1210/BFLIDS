@@ -10,7 +10,7 @@ def to_param_bytes(parameters) -> Parameters:
 
 def hash_params(parameters):
     if isinstance(parameters, list):
-        parameters = to_param_bytes(parameters)
+        parameters = ndarrays_to_parameters(parameters)
     return hl.sha256(b''.join(parameters.tensors)).hexdigest()
 
 def save_params(filepath: str, ipfs_client: ipfshttpclient.client.Client, model: Sequential) -> str:

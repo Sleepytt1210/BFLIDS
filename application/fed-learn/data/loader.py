@@ -33,7 +33,15 @@ def partition(num_clients: int, cid: int, df: pd.DataFrame):
     part = df.iloc[start:, :] if cid == num_clients else df.iloc[start:end, :]
     y = part["label"]
     X = part.drop(["label"], axis=1)
-    return train_test_split(X, y, test_size=0.3, random_state=None)
+    try:
+        return train_test_split(X, y, test_size=0.3, random_state=None)
+    except:
+        print(f"The received cid is {cid}")
+        part = df.iloc[:div, :]
+        y = part["label"]
+        X = part.drop(["label"], axis=1)
+        return train_test_split(X, y, test_size=0.3, random_state=None)
+
 
 def preprocess(df: pd.DataFrame):
     
