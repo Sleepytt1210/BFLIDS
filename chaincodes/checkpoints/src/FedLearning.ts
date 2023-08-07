@@ -122,7 +122,7 @@ class LearningContract extends Contract {
     @Returns('string')
     public async GetAllCheckpoints(ctx: Context) {
 
-        const iterator = await ctx.stub.getStateByRange('', '');
+        const iterator = await ctx.stub.getQueryResult(JSON.stringify({selector: {"docType": this.docType}}));
         const allResults: any[] = []
 
         let result = await iterator.next();
@@ -156,7 +156,6 @@ class LearningContract extends Contract {
     }
 
     @Transaction(false)
-    @Returns('string')
     public async GetLatestCheckpoint(ctx: Context) {
         const queryString = {
             "selector": {
@@ -182,7 +181,6 @@ class LearningContract extends Contract {
     }
 
     @Transaction(false)
-    @Returns('string')
     public async GetHighestAccCheckpoint(ctx: Context, curAcc: number) {
         const queryString = {
             "selector": {
@@ -203,10 +201,9 @@ class LearningContract extends Contract {
 
 
     @Transaction(false)
-    @Returns('string')
-    private async GetQueryResultForQueryString(ctx: Context, queryString: string, pageSize: number = -1) {
+    private async GetQueryResultForQueryString(ctx: Context, queryString: string, limit?: number) {
 
-        const {iterator, metadata} = await ctx.stub.getQueryResultWithPagination(queryString, pageSize);
+        const iterator = await ctx.stub.getQueryResult(queryString);
         const allResults: any[] = []
 
         let result = await iterator.next();
@@ -222,8 +219,8 @@ class LearningContract extends Contract {
             allResults.push(record);
             result = await iterator.next();
         }
-
-        return JSON.stringify(allResults);
+        limit = limit || allResults.length
+        return JSON.stringify(allResults.length == 0 ? [] : limit == 1 ? allResults[0] : allResults.slice(0, limit));
     }
 }
 
