@@ -35,6 +35,7 @@ jspm_packages/
 dist
 
 # Key and cert files
+wallet*/
 *.crt
 *.key
 *.pem
