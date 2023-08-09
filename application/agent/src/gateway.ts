@@ -12,7 +12,6 @@ import { KeysProfile, ClientProfile } from './gatewayOptions'
 import { getConnectionProfile } from './utils/config';
 
 const utf8Decoder = new TextDecoder();
-const connectionProfileFileName = "./connectionProfile.json"  
 const walletPath = path.resolve("./wallets")
 
 async function newIdentity(mspId: string, certPath: string, keyDirectoryPath: string): Promise<X509Identity> {
