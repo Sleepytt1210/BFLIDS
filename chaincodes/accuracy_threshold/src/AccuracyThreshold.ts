@@ -38,6 +38,10 @@ export class AccuracyThreshold extends Contract {
 
     @Transaction()
     public async UpdateThreshold(ctx: Context, requestor: string, threshold_val: number) {
+        if (ctx.clientIdentity.assertAttributeValue("verifier", "false")) {
+            throw Error(`Identity ${ctx.clientIdentity.getID()} is not authorised to perform this action!`)
+        }
+        
         const exists = await this.ThresholdExists(ctx);
 
         if(!exists) {
