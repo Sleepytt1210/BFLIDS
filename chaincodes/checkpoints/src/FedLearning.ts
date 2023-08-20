@@ -25,17 +25,19 @@ class LearningContract extends Contract {
 
     @Transaction()
     public async CreateCheckpoint(ctx: Context, id: string, hash: string, url: string, owner: string, algorithm: string, cAccuracy: number, cLoss: number, round: number, fedSession: number) {
+        this.ValidIdentity(ctx);
+        
         const exists = await this.CheckpointExists(ctx, id);
 
         if (exists) {
             throw new CheckpointExistsError(`The checkpoint ${id} already exists!`)
         }
 
-        let newHAccuracy: number, oldHAccuracy: number = 0
+        let oldHAccuracy: number = 0
 
         const latestCP = await this.GetHighestAccCheckpoint(ctx, cAccuracy)
         if (latestCP && JSON.parse(latestCP).length > 0)
-            oldHAccuracy = JSON.parse(latestCP)[0].HighestAccuracy
+            oldHAccuracy = JSON.parse(latestCP)[0]["HighestAccuracy"]
         
         const thresholdResult = await ctx.stub.invokeChaincode("accuracyT", ["ReadThreshold"], "fedlearn")
         const strValue = Buffer.from(thresholdResult.payload).toString('utf-8')
@@ -43,6 +45,8 @@ class LearningContract extends Contract {
 
         if (this._docType == 'globalCheckpoint' && cAccuracy < oldHAccuracy - threshold)
             throw new BadCheckpointError(`**Transaction REJECTED**! The current accuracy for this model (${cAccuracy}) is lower than the tolerable value ${oldHAccuracy - threshold}`)
+
+        const newHAccuracy = Math.max(oldHAccuracy, cAccuracy)
 
         const checkpoint: Checkpoint = {
             ID: id,
@@ -74,6 +78,8 @@ class LearningContract extends Contract {
 
     @Transaction()
     public async UpdateCheckpoint(ctx: Context, id: string, hash: string, url: string, owner: string, algorithm: string, cAccuracy: number, cLoss: number, round: number, fedSession: number) {
+        this.ValidIdentity(ctx)
+        
         const exists = await this.CheckpointExists(ctx, id);
 
         if (!exists) {
@@ -103,6 +109,7 @@ class LearningContract extends Contract {
 
     @Transaction()
     public async DeleteCheckpoint(ctx: Context, id: string) {
+        this.ValidIdentity(ctx);
         const exists = this.CheckpointExists(ctx, id);
         if (!exists) {
             throw new CheckpointNotFoundError(`The checkpoint ${id} does not exist!`)
@@ -140,6 +147,25 @@ class LearningContract extends Contract {
         }
 
         return JSON.stringify(allResults);
+    }
+
+    @Transaction(true)
+    public async DeleteAllCheckpoints(ctx: Context) {
+        const iterator = await ctx.stub.getQueryResult(JSON.stringify({selector: {"docType": this.docType}}));
+        const allResults: any[] = []
+
+        let result = await iterator.next();
+        while (!result.done) {
+            const strValue = Buffer.from(result.value.value.toString()).toString('utf8');
+            let record;
+            try {
+                record = JSON.parse(strValue);
+                await ctx.stub.deleteState(record['ID'])
+            } catch (err) {
+                console.log(err);
+            }
+            result = await iterator.next();
+        }
     }
 
     @Transaction(false)
@@ -221,6 +247,16 @@ class LearningContract extends Contract {
         }
         limit = limit || allResults.length
         return JSON.stringify(allResults.length == 0 ? [] : limit == 1 ? allResults[0] : allResults.slice(0, limit));
+    }
+
+    @Transaction(false)
+    private ValidIdentity(ctx: Context): void {
+        if (!ctx.clientIdentity.assertAttributeValue("trainer", "true")) {
+            throw Error(`Identity ${ctx.clientIdentity.getID()} is not authorised to perform this action!`)
+        }
+        if (this._docType == 'globalCheckpoint' && !ctx.clientIdentity.assertAttributeValue("verifier", "true")) {
+            throw Error(`Identity ${ctx.clientIdentity.getID()} is not authorised to perform this action!`)
+        }
     }
 }
 
