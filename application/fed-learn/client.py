@@ -16,16 +16,9 @@ import ipfshttpclient2 as ipfshttpclient
 import utils.config as cfg
 import time
 
-
 CHANNEL_NAME='fedlearn'
 CHAINCODE_NAME='checkpoints'
 CONTRACT_NAME='LocalLearningContract'
-
-client_ports = {
-    '1': 7051,
-    '2': 9051,
-    '3': 11051
-}
 
 class Callback(tf.keras.callbacks.Callback):
     """Callback class to print progress every 10 steps"""
@@ -40,8 +33,8 @@ class Callback(tf.keras.callbacks.Callback):
         self.epoch = epoch
 
     def on_train_batch_end(self, batch, logs=None):
-        if self.counter == self.SHOW_NUMBER or self.epoch == 1:
-            print(f"[Client {self.cid}] Epoch {self.epoch} - {batch} - loss: {logs['loss']} - accuracy: {logs['accuracy']}")
+        if self.counter % self.SHOW_NUMBER == 0 or self.epoch == 1:
+            print(f"[Client {self.cid}] Epoch {self.epoch} - {batch} - loss: {logs['loss']:.6f} - accuracy: {logs['accuracy']:.6f}")
             if self.epoch > 1:
                 self.counter = 0
         self.counter += 1
@@ -76,7 +69,7 @@ class BFLClient(fl.client.NumPyClient):
     def fit(self, parameters, config):
         self.model.set_weights(parameters)
         
-        epoch = 5 if cfg.WORK_ENV == 'PROD' else 2 
+        epoch = 5 or config['epoch']
 
         with tf.device('/device:gpu:0'):
             self.model.fit(self.x_train, self.y_train, epochs=epoch, batch_size=32, callbacks=[Callback(self.cid)], verbose=0)
@@ -123,6 +116,8 @@ class BFLClient(fl.client.NumPyClient):
     def evaluate(self, parameters, config):
         self.model.set_weights(parameters)
         loss, accuracy, specificity, sensitivity = self.model.evaluate(self.x_test, self.y_test, callbacks=[Callback(self.cid)], verbose=0)
+
+        self._log(f"Round {config['server_round']} - Aggregated Evaluation - Loss: {loss:.6f} - Accuracy: {accuracy:.6f}")
 
         return loss, len(self.x_test), {"accuracy": float(accuracy), "specificity": float(specificity), "sensitivity": float(sensitivity)}
     
@@ -202,7 +197,7 @@ def main() -> None:
 
     print("Loading model and data for Client", CID)
     x_train, x_test, y_train, y_test = load_data(DATA_ROOT, NUM_CLIENTS, CID)
-    model = net.get_model()
+    model = net.get_model() if cfg.WORK_ENV == 'PROD' else net.get_simple_model()
 
     # Start client
     print(f"Initializing client {CID}")

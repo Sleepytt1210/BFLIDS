@@ -39,7 +39,8 @@ class BFLServer(Server):
         self.algorithm = algorithm_name
         self.ipfs_client = None
         self.temp_model_file_path = temp_model_file_path
-        self.model = net.get_model()
+        self.model = net.get_model() if cfg.WORK_ENV == 'PROD' else net.get_simple_model()
+
         self.associated_client: ClientProxy = None
         self.fed_session = 0
 
@@ -171,7 +172,7 @@ class BFLServer(Server):
 
 def client_fn(cid: str):
     x_train, x_test, y_train, y_test = load_data(DATA_ROOT, cfg.NUM_CLIENTS, cid)
-    model = net.get_model() if cfg.WORK_ENV == 'TEST' else net.get_model()
+    model = net.get_model() if cfg.WORK_ENV == 'PROD' else net.get_simple_model()
 
     # Start client
     print(f"Client connecting to server {cfg.S_ADDR}")
@@ -182,6 +183,12 @@ def fit_config_fn(server_round: int, fed_session: int):
     config = {
         'server_round': server_round,
         'fed_session': fed_session
+    }
+    return config
+
+def evaluate_config_fn(server_round: int):
+    config = {
+        'server_round': server_round
     }
     return config
 
@@ -200,6 +207,7 @@ strategy = BFedAvg(
     min_evaluate_clients=cfg.NUM_CLIENTS,
     min_available_clients=cfg.NUM_CLIENTS,
     on_fit_config_fn=fit_config_fn,
+    on_evaluate_config_fn=evaluate_config_fn,
     evaluate_metrics_aggregation_fn=eval_metrics_aggregation_fn
 )
 

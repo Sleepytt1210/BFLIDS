@@ -33,14 +33,7 @@ def partition(num_clients: int, cid: int, df: pd.DataFrame):
     part = df.iloc[start:, :] if cid == num_clients else df.iloc[start:end, :]
     y = part["label"]
     X = part.drop(["label"], axis=1)
-    try:
-        return train_test_split(X, y, test_size=0.3, random_state=None)
-    except:
-        print(f"The received cid is {cid}")
-        part = df.iloc[:div, :]
-        y = part["label"]
-        X = part.drop(["label"], axis=1)
-        return train_test_split(X, y, test_size=0.3, random_state=None)
+    return train_test_split(X, y, test_size=0.3, random_state=None)
 
 
 def preprocess(df: pd.DataFrame):
@@ -65,18 +58,18 @@ def preprocess(df: pd.DataFrame):
 
     # Normalise
     #Function to min-max normalize
-    def normalize(df, cols):
+    def normalize(in_df, cols):
         """
-        @param df pandas DataFrame
+        @param in_df pandas DataFrame
         @param cols a list of columns to encode
         @return a DataFrame with normalized specified features
         """
-        result = df.copy() # do not touch the original df
+        result = in_df.copy() # do not touch the original df
         for feature_name in cols:
-            max_value = df[feature_name].astype('float').max()
-            min_value = df[feature_name].astype('float').min()
+            max_value = in_df[feature_name].astype('float').max()
+            min_value = in_df[feature_name].astype('float').min()
             if max_value > min_value:
-                result[feature_name] = (df[feature_name].astype('float') - min_value) / (max_value - min_value)
+                result[feature_name] = (in_df[feature_name].astype('float') - min_value) / (max_value - min_value)
         return result
 
     return normalize(df, df.columns)

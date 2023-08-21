@@ -1,6 +1,6 @@
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation
-from keras.layers import LSTM, Bidirectional, BatchNormalization, Conv1D, MaxPooling1D
+from keras.layers import LSTM, Bidirectional, BatchNormalization, Conv1D, MaxPooling1D, Reshape
 import keras.backend as K
 
 def sensitivity(y_true, y_pred): 
@@ -15,6 +15,22 @@ def specificity(y_true, y_pred):
 
 def get_model():
     model = Sequential()
+    model.add(Conv1D(64, kernel_size=64, padding="same",activation="relu",input_shape=(196, 1)))
+    model.add(MaxPooling1D(pool_size=(10)))
+    model.add(BatchNormalization())
+    model.add(Bidirectional(LSTM(64, return_sequences=False)))
+    model.add(Reshape((128, 1), input_shape = (128, )))
+    model.add(MaxPooling1D(pool_size=(5)))
+    model.add(BatchNormalization())
+    model.add(Bidirectional(LSTM(128, return_sequences=False)))
+    model.add(Dropout(0.6))
+    model.add(Dense(1))
+    model.add(Activation('sigmoid'))
+    model.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy', sensitivity, specificity])
+    return model
+
+def get_simple_model():
+    model = Sequential()
     model.add(Conv1D(64, kernel_size=64, padding='same', activation='relu', input_shape=(196, 1)))
     model.add(MaxPooling1D(pool_size=(10)))
     model.add(BatchNormalization())
@@ -22,13 +38,5 @@ def get_model():
     model.add(Dropout(0.6))
     model.add(Dense(1))
     model.add(Activation('sigmoid'))
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy', specificity, sensitivity])
-    return model
-
-def get_simple_model():
-    model = Sequential()
-    model.add(Conv1D(64, kernel_size=64, padding='same', activation='relu', input_shape=(196, 1)))
-    model.add(Dropout(0.7))
-    model.add(Dense(1, activation='sigmoid'))
-    model.compile(loss='binary_crossentropy', optimizer='adam' , metrics=['accuracy', specificity, sensitivity])
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy', sensitivity, specificity])
     return model
