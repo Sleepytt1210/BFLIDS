@@ -156,7 +156,6 @@ class BFLServer(Server):
                    id=model_id,
                    hash=hash,
                    url=ipfs_url,
-                   owner=client_name,
                    accuracy=accuracy,
                    algorithm=self.algorithm,
                    loss=loss,
