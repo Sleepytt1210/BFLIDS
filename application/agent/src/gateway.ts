@@ -12,7 +12,7 @@ import { KeysProfile, ClientProfile } from './gatewayOptions'
 import { getConnectionProfile } from './utils/config';
 
 const utf8Decoder = new TextDecoder();
-const walletPath = path.resolve("./wallets")
+const walletPath = path.resolve('./wallets')
 
 async function newIdentity(mspId: string, certPath: string, keyDirectoryPath: string): Promise<X509Identity> {
     const files = await fs.readdir(keyDirectoryPath);
@@ -58,7 +58,7 @@ export async function getAllCheckpoints(contract: Contract): Promise<void> {
 /**
  * Submit a transaction synchronously, blocking until it has been committed to the ledger.
  */
-export async function createCheckpoint(contract: Contract, id: string, hash: string, url: string, owner: string, algorithm: string, cAccuracy: string, loss: string, round: string, fedSession: string): Promise<void> {
+export async function createCheckpoint(contract: Contract, id: string, hash: string, url: string, algorithm: string, cAccuracy: string, loss: string, round: string, fedSession: string): Promise<void> {
     console.log('\n--> Submit Transaction: CreateCheckpoint, creates new model with ID, Hash, URL, Owner, Algorithm, Current Accuracy, Loss, Round and FedSession arguments');
 
     await contract.submitTransaction(
@@ -66,7 +66,6 @@ export async function createCheckpoint(contract: Contract, id: string, hash: str
         id,
         hash,
         url,
-        owner,
         algorithm,
         cAccuracy,
         loss,

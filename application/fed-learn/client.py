@@ -97,7 +97,6 @@ class BFLClient(fl.client.NumPyClient):
             id=id,
             hash=hash,
             url=resource_url,
-            owner=owner,
             round=server_round,
             algorithm="BiLSTM",
             accuracy=accuracy,
