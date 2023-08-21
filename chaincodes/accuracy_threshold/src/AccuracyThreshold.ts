@@ -1,7 +1,7 @@
 import { Contract, Info, Transaction, Context, Returns } from "fabric-contract-api"
 import stringify from "json-stringify-deterministic"
 import sortKeysRecursive from "sort-keys-recursive"
-import { ThresholdNotFoundError } from './errors'
+import { ThresholdExistsError, ThresholdNotFoundError } from './errors'
 import { AccuracyT } from "./AccuracyT"
 
 const THRESHOLD_ID = '1'
@@ -15,9 +15,19 @@ export class AccuracyThreshold extends Contract {
 
     @Transaction()
     public async InitLedger(ctx: Context): Promise<void> {
+        if (ctx.clientIdentity.assertAttributeValue("verifier", "false")) {
+            throw Error(`Identity ${ctx.clientIdentity.getID()} is not authorised to perform this action!`)
+        }
+    
+        const exists = await this.ThresholdExists(ctx);
+
+        if(exists) {
+            throw new ThresholdExistsError(`The threshold ${THRESHOLD_ID} already exist!`)
+        } 
+
         const threshold: AccuracyT = {
                 ID: THRESHOLD_ID,
-                Requestor: 'org1.example.com',
+                Requestor: this.GetOwnerNameFromCtx(ctx),
                 Threshold: 1
             }
 
@@ -50,7 +60,7 @@ export class AccuracyThreshold extends Contract {
 
         const threshold: AccuracyT = {
             ID: THRESHOLD_ID,
-            Requestor: requestor,
+            Requestor: this.GetOwnerNameFromCtx(ctx),
             Threshold: threshold_val
         }
 
@@ -67,7 +77,7 @@ export class AccuracyThreshold extends Contract {
 
     @Transaction(false)
     @Returns('string')
-    public async GetAllThresholds(ctx: Context) {
+    public async GetThresholdHistories(ctx: Context) {
         const allResults: any[] = []
 
         const iterator = await ctx.stub.getHistoryForKey(THRESHOLD_ID);
@@ -87,5 +97,13 @@ export class AccuracyThreshold extends Contract {
 
         return JSON.stringify(allResults);
     }
+
+    @Transaction(false)
+	public GetOwnerNameFromCtx(ctx: Context): string {
+		return (
+			ctx.clientIdentity.getMSPID() +
+			ctx.clientIdentity.getID().substring(ctx.clientIdentity.getID().indexOf("::"))
+		);
+	}
 
 }
