@@ -82,7 +82,7 @@ export class LearningContract extends Contract {
 	public async ReadCheckpoint(ctx: Context, id: string): Promise<string> {
 		const cpJSON = await ctx.stub.getState(id);
 		if (!cpJSON || cpJSON.length == 0) {
-			throw new Error(`The checkpoint ${id} does not exist!`);
+			throw new CheckpointNotFoundError(`The checkpoint ${id} does not exist!`);
 		}
 
 		return cpJSON.toString();
@@ -101,14 +101,13 @@ export class LearningContract extends Contract {
 		round: number,
 		fedSession: number
 	) {
-
 		const exists = await this.CheckpointExists(ctx, id);
 
 		if (!exists) {
 			throw new CheckpointNotFoundError(`The checkpoint ${id} does not exist!`);
 		}
 
-		this.ValidIdentity(ctx, true, (JSON.parse((await this.ReadCheckpoint(ctx, id))) as Checkpoint).Owner);
+		this.ValidIdentity(ctx, true, (JSON.parse(await this.ReadCheckpoint(ctx, id)) as Checkpoint).Owner);
 
 		const thresholdResult = await ctx.stub.invokeChaincode("accuracyT", ["ReadThreshold"], "fedlearn");
 		const strValue = Buffer.from(thresholdResult.payload).toString("utf-8");
@@ -148,7 +147,7 @@ export class LearningContract extends Contract {
 
 	@Transaction()
 	public async DeleteCheckpoint(ctx: Context, id: string) {
-		this.ValidIdentity(ctx);
+		this.ValidIdentity(ctx, true, (JSON.parse(await this.ReadCheckpoint(ctx, id)) as Checkpoint).Owner);
 		const exists = this.CheckpointExists(ctx, id);
 		if (!exists) {
 			throw new CheckpointNotFoundError(`The checkpoint ${id} does not exist!`);
@@ -216,7 +215,7 @@ export class LearningContract extends Contract {
 			},
 		};
 
-		return await this.GetQueryResultForQueryString(ctx, JSON.stringify(queryString)); //shim.success(queryResults);
+		return await this.GetQueryResultForQueryString(ctx, JSON.stringify(queryString));
 	}
 
 	@Transaction(false)
