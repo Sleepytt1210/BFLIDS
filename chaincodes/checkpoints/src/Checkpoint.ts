@@ -1,6 +1,6 @@
 import { Object, Property } from "fabric-contract-api"
 
-type CheckpointTypes = "localCheckpoint" | "globalCheckpoint";
+export type CheckpointTypes = "localCheckpoint" | "globalCheckpoint";
 
 @Object()
 export class Checkpoint{
