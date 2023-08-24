@@ -4,12 +4,11 @@ import os
 import models.net as net
 from strategy.BFedAvg import BFedAvg
 
-from history import BFedHistory
 from client import BFLClient
 from bflcm import BFLClientManager
 
 import flwr as fl
-from flwr.server import Server
+from flwr.server import Server, History
 from flwr.server.client_proxy import ClientProxy
 from flwr.common import GetParametersIns, ndarrays_to_parameters, parameters_to_ndarrays
 from flwr.common.logger import log
@@ -39,12 +38,12 @@ class BFLServer(Server):
         self.algorithm = algorithm_name
         self.ipfs_client = None
         self.temp_model_file_path = temp_model_file_path
-        self.model = net.get_model() if cfg.WORK_ENV == 'PROD' else net.get_simple_model()
+        self.model = net.get_model()
 
         self.associated_client: ClientProxy = None
         self.fed_session = 0
 
-    def fit(self, num_rounds: int, timeout: float | None) -> BFedHistory:
+    def fit(self, num_rounds: int, timeout: float | None) -> History:
         """Run federated averaging for a number of rounds."""
 
         # Assume the same env vars has been set by the user for both server and client script
@@ -63,14 +62,14 @@ class BFLServer(Server):
         client_name = "User1@" + associated_client_config["PEER_DOMAIN"]
         latest_cps = query_model(f"{cfg.CHECKPOINTS_QUERY_URL}latestcheckpoint", CHANNEL_NAME, CHAINCODE_NAME, CONTRACT_NAME, client_name)
         self.latest_checkpoint = latest_cps if len(latest_cps) > 0 else None
-        history = BFedHistory()
+        history = History()
 
         self.fed_session = self.latest_checkpoint["FedSession"] + 1 if self.latest_checkpoint != None else 1
         self.strategy.set_fed_session(self.fed_session)
 
         # Initialize parameters
         log(INFO, "Initializing global parameters")
-        self.parameters = self._get_initial_parameters(timeout, ipfs_client)
+        self.parameters = self._get_initial_parameters(timeout)
         log(INFO, f"Waiting for enough cients to join ({self.strategy.min_available_clients})")
 
         self.client_manager().wait_for(self.strategy.min_available_clients)
@@ -119,7 +118,7 @@ class BFLServer(Server):
         log(INFO, "FL finished in %s", elapsed)
         return history
     
-    def _get_initial_parameters(self, timeout: float | None, ipfs_client: ipfshttpclient.Client) -> Parameters:
+    def _get_initial_parameters(self, timeout: float | None, ipfs_client: ipfshttpclient.Client = None) -> Parameters:
         """Get initial parameters from one of the available clients."""
 
         if self.latest_checkpoint and self.ipfs_client:
@@ -159,7 +158,7 @@ class BFLServer(Server):
                    accuracy=accuracy,
                    algorithm=self.algorithm,
                    loss=loss,
-                   round=server_round,
+                   fed_round=server_round,
                    fed_session=self.fed_session,
                    channel_name=CHANNEL_NAME,
                    chaincode_name=CHAINCODE_NAME,
@@ -170,12 +169,12 @@ class BFLServer(Server):
         log(INFO, str(resp))
 
 def client_fn(cid: str):
-    x_train, x_test, y_train, y_test = load_data(DATA_ROOT, cfg.NUM_CLIENTS, cid)
-    model = net.get_model() if cfg.WORK_ENV == 'PROD' else net.get_simple_model()
+    X_train, X_test, y_train, y_test = load_data(DATA_ROOT, cfg.NUM_CLIENTS, cid)
+    model = net.get_model()
 
     # Start client
     print(f"Client connecting to server {cfg.S_ADDR}")
-    client = BFLClient(cid, model, x_train, y_train, x_test, y_test)
+    client = BFLClient(cid, model, x_train=X_train, x_test=X_test, y_train=y_train, y_test=y_test)
     return client
 
 def fit_config_fn(server_round: int, fed_session: int):
@@ -217,7 +216,7 @@ if __name__ == "__main__":
             client_fn = client_fn,
             clients_ids= [str(i) for i in range(1, cfg.NUM_CLIENTS + 1)],
             strategy = strategy,
-            server=BFLServer('1', "BiLSTM", strategy=strategy, client_manager=BFLClientManager()),
+            server=BFLServer('1', "LSTM", strategy=strategy, client_manager=BFLClientManager()),
             num_clients = cfg.NUM_CLIENTS,
             config = fl.server.ServerConfig(num_rounds=cfg.NUM_ROUNDS),
             client_resources=None,
@@ -225,7 +224,7 @@ if __name__ == "__main__":
     elif cfg.WORK_ENV == "PROD":
         fl.server.start_server(
             server_address=cfg.S_ADDR,
-            server=BFLServer('1', "BiLSTM", strategy=strategy, client_manager=BFLClientManager()),
+            server=BFLServer('1', "LSTM", strategy=strategy, client_manager=BFLClientManager()),
             strategy=strategy, 
             config=fl.server.ServerConfig(num_rounds=cfg.NUM_ROUNDS),
         )

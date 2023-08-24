@@ -39,6 +39,7 @@ class Callback(tf.keras.callbacks.Callback):
                 self.counter = 0
         self.counter += 1
 
+batch_size=1000
 
 class BFLClient(fl.client.NumPyClient):
 
@@ -69,10 +70,10 @@ class BFLClient(fl.client.NumPyClient):
     def fit(self, parameters, config):
         self.model.set_weights(parameters)
         
-        epoch = 5 or config['epoch']
+        epoch = config['epoch'] or 20
 
         with tf.device('/device:gpu:0'):
-            self.model.fit(self.x_train, self.y_train, epochs=epoch, batch_size=32, callbacks=[Callback(self.cid)], verbose=0)
+            self.model.fit(self.x_train, self.y_train, epochs=epoch, batch_size=batch_size, callbacks=[Callback(self.cid)], verbose=0, shuffle=False)
 
         loss, accuracy, _, _ = self.model.evaluate(self.x_test, self.y_test, callbacks=[Callback(self.cid)], verbose=0)
         
@@ -114,7 +115,7 @@ class BFLClient(fl.client.NumPyClient):
 
     def evaluate(self, parameters, config):
         self.model.set_weights(parameters)
-        loss, accuracy, specificity, sensitivity = self.model.evaluate(self.x_test, self.y_test, callbacks=[Callback(self.cid)], verbose=0)
+        loss, accuracy, specificity, sensitivity = self.model.evaluate(self.x_test, self.y_test, batch_size=100, callbacks=[Callback(self.cid)], verbose=0)
 
         self._log(f"Round {config['server_round']} - Aggregated Evaluation - Loss: {loss:.6f} - Accuracy: {accuracy:.6f}")
 
@@ -196,7 +197,7 @@ def main() -> None:
 
     print("Loading model and data for Client", CID)
     x_train, x_test, y_train, y_test = load_data(DATA_ROOT, NUM_CLIENTS, CID)
-    model = net.get_model() if cfg.WORK_ENV == 'PROD' else net.get_simple_model()
+    model = net.get_model()
 
     # Start client
     print(f"Initializing client {CID}")
