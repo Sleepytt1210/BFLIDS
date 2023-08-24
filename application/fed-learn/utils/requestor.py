@@ -1,6 +1,7 @@
 import requests
+import math
 
-def post_model(req_url, id, hash, url, algorithm, accuracy, loss, round, fed_session, channel_name, chaincode_name, contract_name, client):
+def post_model(req_url: str, id: str, hash: str, url: str, algorithm: str, accuracy: float, loss: float, fed_round: int, fed_session: int, channel_name: str, chaincode_name: str, contract_name: str, client: str):
     
     data = {
         "channelName": channel_name,
@@ -12,9 +13,9 @@ def post_model(req_url, id, hash, url, algorithm, accuracy, loss, round, fed_ses
             "hash": hash,
             "url": url,
             "algorithm": algorithm,
-            "cAccuracy": accuracy,
-            "loss": loss,
-            "round": round,
+            "cAccuracy": round(accuracy, 6),
+            "loss": round(loss, 6),
+            "round": fed_round,
             "fedSession": fed_session,
         },
     }
