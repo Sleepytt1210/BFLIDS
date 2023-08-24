@@ -70,7 +70,7 @@ class BFLClient(fl.client.NumPyClient):
     def fit(self, parameters, config):
         self.model.set_weights(parameters)
         
-        epoch = config['epoch'] or 20
+        epoch = config.get('epoch') or 20
 
         with tf.device('/device:gpu:0'):
             self.model.fit(self.x_train, self.y_train, epochs=epoch, batch_size=batch_size, callbacks=[Callback(self.cid)], verbose=0, shuffle=False)
@@ -98,8 +98,8 @@ class BFLClient(fl.client.NumPyClient):
             id=id,
             hash=hash,
             url=resource_url,
-            round=server_round,
-            algorithm="BiLSTM",
+            fed_round=server_round,
+            algorithm="LSTM",
             accuracy=accuracy,
             loss=loss,
             fed_session=fed_session,
@@ -111,7 +111,7 @@ class BFLClient(fl.client.NumPyClient):
 
         self._log(resp)
 
-        return parameters, len(self.x_train), {}
+        return self.model.get_weights(), len(self.x_train), {}
 
     def evaluate(self, parameters, config):
         self.model.set_weights(parameters)

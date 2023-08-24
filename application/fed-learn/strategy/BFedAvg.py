@@ -5,9 +5,8 @@ from flwr.server.client_proxy import ClientProxy
 from flwr.server.strategy import FedAvg
 
 class BFedAvg(FedAvg):
-    def __init__(self, *args, save_path, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.save_path = save_path
         self.fed_session = 0
 
     def configure_fit(
@@ -30,10 +29,8 @@ class BFedAvg(FedAvg):
 
         # Return client/config pairs
         return [(client, fit_ins) for client in clients]
-
-    def set_fed_session(self, fed_session):
+    def set_fed_session(self, fed_session: int):
         self.fed_session = fed_session
 
-    def get_fed_session(self) -> int:
+    def get_fed_session(self):
         return self.fed_session
-

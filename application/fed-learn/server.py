@@ -6,6 +6,8 @@ from strategy.BFedAvg import BFedAvg
 
 from client import BFLClient
 from bflcm import BFLClientManager
+from bflhistory import BFLHistory
+
 
 import flwr as fl
 from flwr.server import Server, History
@@ -62,7 +64,7 @@ class BFLServer(Server):
         client_name = "User1@" + associated_client_config["PEER_DOMAIN"]
         latest_cps = query_model(f"{cfg.CHECKPOINTS_QUERY_URL}latestcheckpoint", CHANNEL_NAME, CHAINCODE_NAME, CONTRACT_NAME, client_name)
         self.latest_checkpoint = latest_cps if len(latest_cps) > 0 else None
-        history = History()
+        history = BFLHistory()
 
         self.fed_session = self.latest_checkpoint["FedSession"] + 1 if self.latest_checkpoint != None else 1
         self.strategy.set_fed_session(self.fed_session)
@@ -115,6 +117,7 @@ class BFLServer(Server):
         # Bookkeeping
         end_time = timeit.default_timer()
         elapsed = end_time - start_time
+        history.set_elapsed(elapsed)
         log(INFO, "FL finished in %s", elapsed)
         return history
     
@@ -169,7 +172,7 @@ class BFLServer(Server):
         log(INFO, str(resp))
 
 def client_fn(cid: str):
-    X_train, X_test, y_train, y_test = load_data(DATA_ROOT, cfg.NUM_CLIENTS, cid)
+    X_train, X_test, y_train, y_test = load_data(DATA_ROOT, cfg.NUM_CLIENTS, int(cid))
     model = net.get_model()
 
     # Start client
@@ -192,15 +195,17 @@ def evaluate_config_fn(server_round: int):
 
 def eval_metrics_aggregation_fn(results: List[Tuple[int, Metrics]]):
     # Weigh accuracy of each client by number of examples used
-    accuracies = [metric["accuracy"] * num for num, metric in results]
+    metrics_sum = {}
+    for num, metrics in results:
+        for metric in metrics:
+            metrics_sum[metric] = (metrics_sum.get(metric) or 0) + metrics[metric] * num
     examples = [num for num, _ in results]
 
     # Aggregate and print custom metric
-    aggregated_accuracy = sum(accuracies) / sum(examples)
-    return {"accuracy": aggregated_accuracy}
+    res = {key: metric/sum(examples) for key, metric in metrics_sum.items()}
+    return res
 
 strategy = BFedAvg(
-    save_path=SAVE_DIR,
     min_fit_clients=cfg.NUM_CLIENTS,
     min_evaluate_clients=cfg.NUM_CLIENTS,
     min_available_clients=cfg.NUM_CLIENTS,
@@ -212,15 +217,16 @@ strategy = BFedAvg(
 if __name__ == "__main__":
     print(f"Starting server at {cfg.S_ADDR}")
     if cfg.WORK_ENV == "TEST" or cfg.WORK_ENV == "SIM":
-        fl.simulation.start_simulation(
+        history = fl.simulation.start_simulation(
             client_fn = client_fn,
             clients_ids= [str(i) for i in range(1, cfg.NUM_CLIENTS + 1)],
             strategy = strategy,
-            server=BFLServer('1', "LSTM", strategy=strategy, client_manager=BFLClientManager()),
             num_clients = cfg.NUM_CLIENTS,
+            server = BFLServer('1', "LSTM", SAVE_DIR, strategy=strategy, client_manager=BFLClientManager()),
             config = fl.server.ServerConfig(num_rounds=cfg.NUM_ROUNDS),
             client_resources=None,
         )
+        print(history)
     elif cfg.WORK_ENV == "PROD":
         fl.server.start_server(
             server_address=cfg.S_ADDR,

@@ -25,7 +25,12 @@ def load_data(path: str, num_clients: int, cid: int) -> Tuple[pd.DataFrame, pd.D
     df = preprocess(df)
 
     # Partition data based on client id (Assume 5 clients => cid [0 ... 4])
-    return partition(num_clients=num_clients, cid=cid, df=df)
+    X_train, X_test, y_train, y_test = partition(num_clients=num_clients, cid=cid, df=df)
+    X_train_array = np.array(X_train)
+    X_train_reshaped = X_train_array.reshape(X_train_array.shape[0], 1, 56)
+    X_test_array = np.array(X_test)
+    X_test_reshaped = X_test_array.reshape(X_test.shape[0], 1, 56)
+    return X_train_reshaped, X_test_reshaped, y_train, y_test
 
 
 def get_part(num_clients: int, cid: int, df: pd.DataFrame | np.ndarray):
@@ -95,7 +100,15 @@ def normalize(df_in: pd.DataFrame, cols):
 
 
 def preprocess(df_in: pd.DataFrame):
+    df_in = df_in.drop(['id', 'attack_cat'], axis=1)
     df_in = rm_outliers(df_in)
     df_in = reduce_labels(df_in)
     df_in = normalize(df_in, df_in.select_dtypes(include=[np.number]).columns)
     return onehot(df_in)
+
+if __name__ == '__main__':
+    DATA_ROOT = path.abspath('./data/datasets')
+    train_df = pd.read_csv(csvfile(DATA_ROOT, True))
+    test_df = pd.read_csv(csvfile(DATA_ROOT, False))
+    df = pd.concat([train_df, test_df])
+    preprocess(df)
