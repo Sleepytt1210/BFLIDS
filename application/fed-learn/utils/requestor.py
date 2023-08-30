@@ -13,7 +13,7 @@ def post_model(req_url: str, id: str, hash: str, url: str, algorithm: str, accur
             "hash": hash,
             "url": url,
             "algorithm": algorithm,
-            "cAccuracy": round(accuracy, 6),
+            "cAccuracy": round(accuracy, 6) * 100,
             "loss": round(loss, 6),
             "round": fed_round,
             "fedSession": fed_session,
@@ -103,13 +103,16 @@ if __name__ == '__main__':
     #            "checkpoints",
     #            "GlobalLearningContract",
     #            "User1@org1.example.com")
+    CHANNEL_NAME="fedlearn"
+    CHAINCODE_NAME="checkpoints"
+    CONTRACT_NAME="GlobalLearningContract"
+    resp = query_model(f"http://localhost:30027/query/checkpoint/latestcheckpoint", CHANNEL_NAME, CHAINCODE_NAME, CONTRACT_NAME, "User1@org1.example.com")
+    # resp = query_model("http://localhost:30027/query/checkpoint/latest", "fedlearn",
+    #            "checkpoints",
+    #            "GlobalLearningContract",
+    #            "User1@org1.example.com")
     
-    resp = query_model("http://localhost:30027/query/checkpoint/latest", "fedlearn",
-               "checkpoints",
-               "GlobalLearningContract",
-               "User1@org1.example.com")
-    
-    print(resp)
+    print(resp["URL"])
     
 #     # resp = query_model(f"http://localhost:30027/query/checkpoint/latest", "fedlearn", "checkpoints", "GlobalLearningContract", "org1.example.com")
 #     # print(type(resp[0]["FedSession"]))

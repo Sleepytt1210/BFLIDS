@@ -10,6 +10,7 @@ from bflcm import BFLClientManager
 from bflhistory import BFLHistory
 from plotter.plot import plot_time, plot_all
 import pickle
+from subprocess import Popen
 
 
 import flwr as fl
@@ -27,6 +28,7 @@ from typing import List, Tuple
 
 from logging import INFO, ERROR
 import timeit
+import time
 
 SAVE_DIR = os.path.abspath('./model_ckpt/tmp/') if cfg.WORK_ENV == 'TEST' else os.path.abspath('./model_ckpt/')
 DATA_ROOT = os.path.abspath('./data/datasets')
@@ -59,6 +61,16 @@ class BFLServer(Server):
         if self.associated_client == None:
             log(ERROR, f"Timeout waiting for associated client's connection!")
             exit(1)
+
+        if not self._is_port_in_use(associated_client_config['IPFS_GATEWAY_PORT']):
+
+            log(INFO, f"Starting IPFS daemon")
+            self._ipfs_daemon = Popen(
+                ['./ipfs.sh', 'setup'],
+                env=associated_client_config,
+            )
+
+            time.sleep(5)
 
         ipfs_client = ipfshttpclient.Client(f"/ip4/{associated_client_config['IPFS_HOST']}/tcp/{int(associated_client_config['IPFS_API_PORT'])}/http")
         ipfs_id = dict(ipfs_client.id())
@@ -180,6 +192,11 @@ class BFLServer(Server):
 
         log(INFO, str(resp))
 
+    def _is_port_in_use(self, port):
+        import socket
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex(('localhost', int(port))) == 0
+
 def client_fn(cid: str):
     X_train, X_test, y_train, y_test = load_data(DATA_ROOT, cfg.NUM_CLIENTS, int(cid))
     model = net.get_model()
@@ -227,23 +244,22 @@ if __name__ == "__main__":
     print(f"Starting server at {cfg.S_ADDR}")
     if cfg.WORK_ENV == "TEST" or cfg.WORK_ENV == "SIM":
         histories = []
-        for i in range(cfg.NUM_RUNS):
-            histories.append(fl.simulation.start_simulation(
-                client_fn = client_fn,
-                clients_ids= [str(i) for i in range(1, cfg.NUM_CLIENTS + 1)],
-                strategy = strategy,
-                num_clients = cfg.NUM_CLIENTS,
-                server = BFLServer('1', "BiLSTM", SAVE_DIR, strategy=strategy, client_manager=BFLClientManager()),
-                config = fl.server.ServerConfig(num_rounds=cfg.NUM_ROUNDS),
-                client_resources=None,
-            ))
+        histories.append(fl.simulation.start_simulation(
+            client_fn = client_fn,
+            clients_ids= [str(i) for i in range(1, cfg.NUM_CLIENTS + 1)],
+            strategy = strategy,
+            num_clients = cfg.NUM_CLIENTS,
+            server = BFLServer('1', "BiLSTM", SAVE_DIR, strategy=strategy, client_manager=BFLClientManager()),
+            config = fl.server.ServerConfig(num_rounds=cfg.NUM_ROUNDS),
+            client_resources=None,
+        ))
         
-        with open(f"./plotter/histories/hist_2", 'wb') as f:
-            pickle.dump(histories, f)
-            f.close()
-        plot_all(histories, cfg.NUM_ROUNDS)
-        times = np.array([history.elapsed for history in histories])
-        plot_time(times, cfg.NUM_RUNS)
+        # with open(f"./plotter/histories/hist_2", 'wb') as f:
+        #     pickle.dump(histories, f)
+        #     f.close()
+        # plot_all(histories, cfg.NUM_ROUNDS)
+        # times = np.array([history.elapsed for history in histories])
+        # plot_time(times, cfg.NUM_RUNS)
     elif cfg.WORK_ENV == "PROD":
         fl.server.start_server(
             server_address=cfg.S_ADDR,

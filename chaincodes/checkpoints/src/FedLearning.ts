@@ -48,14 +48,14 @@ export class LearningContract extends Contract {
 
 		let oldHAccuracy: number = 0;
 
-		if (this._docType == "globalCheckpoint") {
-			const latestCP = await this.GetHighestAccCheckpoint(ctx, cAccuracy);
-			if (latestCP && JSON.parse(latestCP).length > 0) oldHAccuracy = JSON.parse(latestCP)[0]["HighestAccuracy"];
+		if (this.docType == "globalCheckpoint") {
+			const highestAccCp = await this.GetHighestAccCheckpoint(ctx, cAccuracy);
+			if (highestAccCp && JSON.parse(highestAccCp)) oldHAccuracy = JSON.parse(highestAccCp)["HighestAccuracy"];
 
 			if (cAccuracy < oldHAccuracy - threshold)
 				throw new BadCheckpointError(
-					`**Transaction REJECTED**! The current accuracy for this model 
-        (${cAccuracy}) is lower than the tolerable value ${oldHAccuracy - threshold}`
+					`**Transaction REJECTED**! The current accuracy for this model (${cAccuracy}) 
+					is lower than the tolerable value ${oldHAccuracy - threshold}`
 				);
 		}
 
@@ -115,14 +115,14 @@ export class LearningContract extends Contract {
 
 		let oldHAccuracy: number = 0;
 
-		if (this._docType == "globalCheckpoint") {
-			const latestCP = await this.GetHighestAccCheckpoint(ctx, cAccuracy);
-			if (latestCP && JSON.parse(latestCP).length > 0) oldHAccuracy = JSON.parse(latestCP)[0]["HighestAccuracy"];
+		if (this.docType == "globalCheckpoint") {
+			const highestAccCp = await this.GetHighestAccCheckpoint(ctx, cAccuracy);
+			if (highestAccCp && JSON.parse(highestAccCp)) oldHAccuracy = JSON.parse(highestAccCp)["HighestAccuracy"];
 
 			if (cAccuracy < oldHAccuracy - threshold)
 				throw new BadCheckpointError(
-					`**Transaction REJECTED**! The current accuracy for this model 
-        (${cAccuracy}) is lower than the tolerable value ${oldHAccuracy - threshold}`
+					`**Transaction REJECTED**! The current accuracy for this model (${cAccuracy}) 
+					is lower than the tolerable value ${oldHAccuracy - threshold}`
 				);
 		}
 
@@ -323,43 +323,19 @@ export class GlobalLearningContract extends LearningContract {
 		this.ValidIdentity(ctx);
 		const checkpoints: Checkpoint[] = [
 			{
-				"Algorithm": "LSTM",
-				"CurAccuracy": 0.874645,
-				"FedSession": 1,
-				"Hash": "a71073aab977d93a350fa0f37e10ece715857e285091f0a3eb847836c1123723",
-				"HighestAccuracy": 0.874645,
-				"ID": "gmodel_fs1_r1_a71073aab977d93a350fa0f37e10ece715857e285091f0a3eb847836c1123723",
-				"Loss": 0.818561,
-				"Owner": "Org1MSP::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=UK/ST=Greater Manchester/L=Manchester/O=org1.example.com/CN=ca.org1.example.com",
-				"Round": 1,
-				"URL": "/ipfs/QmaqHD8SwiM9accixFPutbNKxXtKVzp8NHxBrJ73Af2osp",
-				"docType": "globalCheckpoint"
-			},
-			{
-				"Algorithm": "LSTM",
-				"CurAccuracy": 0.186959,
-				"FedSession": 1,
-				"Hash": "35d86d4da022b23dbc9c06f17a82d1f7230bdd872dcfe5ceaf9cf7bad481ee5b",
-				"HighestAccuracy": 0.186959,
-				"ID": "gmodel_fs1_r2_35d86d4da022b23dbc9c06f17a82d1f7230bdd872dcfe5ceaf9cf7bad481ee5b",
-				"Loss": 0.90004,
-				"Owner": "Org1MSP::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=UK/ST=Greater Manchester/L=Manchester/O=org1.example.com/CN=ca.org1.example.com",
-				"Round": 2,
-				"URL": "/ipfs/QmdXvm2cRrtnkg4accEHYU3aJzPPGNwezHCYWE3S2tvj6Y",
-				"docType": "globalCheckpoint"
-			},
-			{
-				"Algorithm": "LSTM",
-				"CurAccuracy": 0.144031,
-				"FedSession": 1,
-				"Hash": "84406bed7ee273331a757ffa7b29e9e6625d1cc59bf489e7f13c9592e6ea5fb7",
-				"HighestAccuracy": 0.144031,
-				"ID": "gmodel_fs1_r3_84406bed7ee273331a757ffa7b29e9e6625d1cc59bf489e7f13c9592e6ea5fb7",
-				"Loss": 0.932423,
-				"Owner": "Org1MSP::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=UK/ST=Greater Manchester/L=Manchester/O=org1.example.com/CN=ca.org1.example.com",
-				"Round": 3,
-				"URL": "/ipfs/QmeKEyq5Y9EHMbjqoQW9GG14gontyAc1cv6Ayd2osbnbjm",
-				"docType": "globalCheckpoint"
+				Algorithm: "BiLSTM",
+				CurAccuracy: 81.85,
+				FedSession: 1,
+				Hash: "a71073aab977d93a350fa0f37e10ece715857e285091f0a3eb847836c1123723",
+				HighestAccuracy: 81.85,
+				ID: "gmodel_fs1_r1_a71073aab977d93a350fa0f37e10ece715857e285091f0a3eb847836c1123723",
+				Loss: 0.874645,
+				Owner:
+					"Org1MSP::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=UK/ST=Greater Manchester" +
+					"/L=Manchester/O=org1.example.com/CN=ca.org1.example.com",
+				Round: 1,
+				URL: "/ipfs/QmaqHD8SwiM9accixFPutbNKxXtKVzp8NHxBrJ73Af2osp",
+				docType: "globalCheckpoint",
 			},
 		];
 
@@ -390,43 +366,43 @@ export class LocalLearningContract extends LearningContract {
 		this.ValidIdentity(ctx);
 		const checkpoints: Checkpoint[] = [
 			{
-				"Algorithm": "LSTM",
-				"CurAccuracy": 0.924558,
-				"FedSession": 1,
-				"Hash": "5742110b0d45132f130be6f9495b2d6551851da58c7df305e2530f141025b0ae",
-				"HighestAccuracy": 0.924558,
-				"ID": "model_fs1_r1_c1_5742110b0d45132f130be6f9495b2d6551851da58c7df305e2530f141025b0ae",
-				"Loss": 0.154124,
-				"Owner": "Org1MSP::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=UK/ST=Greater Manchester/L=Manchester/O=org1.example.com/CN=ca.org1.example.com",
-				"Round": 1,
-				"URL": "/ipfs/QmYiocQ6k2zoXwsRJGeFdZkZmFLJyfoubT2D6P3yqhvpyp",
-				"docType": "localCheckpoint"
+				Algorithm: "BiLSTM",
+				CurAccuracy: 0.924558,
+				FedSession: 1,
+				Hash: "5742110b0d45132f130be6f9495b2d6551851da58c7df305e2530f141025b0ae",
+				HighestAccuracy: 0.924558,
+				ID: "model_fs1_r1_c1_5742110b0d45132f130be6f9495b2d6551851da58c7df305e2530f141025b0ae",
+				Loss: 0.154124,
+				Owner: "Org1MSP::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=UK/ST=Greater Manchester/L=Manchester/O=org1.example.com/CN=ca.org1.example.com",
+				Round: 1,
+				URL: "/ipfs/QmYiocQ6k2zoXwsRJGeFdZkZmFLJyfoubT2D6P3yqhvpyp",
+				docType: "localCheckpoint",
 			},
 			{
-				"Algorithm": "LSTM",
-				"CurAccuracy": 0.965021,
-				"FedSession": 1,
-				"Hash": "61e69da40b818f2cd79dc88494b715f3356c8f3d0ea4f5adc0a5ad85084a00ef",
-				"HighestAccuracy": 0.965021,
-				"ID": "model_fs1_r1_c2_61e69da40b818f2cd79dc88494b715f3356c8f3d0ea4f5adc0a5ad85084a00ef",
-				"Loss": 0.088593,
-				"Owner": "Org2MSP::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=UK/ST=Greater Manchester/L=Manchester/O=org2.example.com/CN=ca.org2.example.com",
-				"Round": 1,
-				"URL": "/ipfs/Qmc9V9t5zguQs6BAN9Y2PUsG1avuKoDufWUkaHffyrJWAj",
-				"docType": "localCheckpoint"
+				Algorithm: "BiLSTM",
+				CurAccuracy: 0.965021,
+				FedSession: 1,
+				Hash: "61e69da40b818f2cd79dc88494b715f3356c8f3d0ea4f5adc0a5ad85084a00ef",
+				HighestAccuracy: 0.965021,
+				ID: "model_fs1_r1_c2_61e69da40b818f2cd79dc88494b715f3356c8f3d0ea4f5adc0a5ad85084a00ef",
+				Loss: 0.088593,
+				Owner: "Org2MSP::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=UK/ST=Greater Manchester/L=Manchester/O=org2.example.com/CN=ca.org2.example.com",
+				Round: 1,
+				URL: "/ipfs/Qmc9V9t5zguQs6BAN9Y2PUsG1avuKoDufWUkaHffyrJWAj",
+				docType: "localCheckpoint",
 			},
 			{
-				"Algorithm": "LSTM",
-				"CurAccuracy": 0.942616,
-				"FedSession": 1,
-				"Hash": "a0baf66faf2bdd39d276c05b8471f219815a5ab89a6de3fecf2b9dbea8170574",
-				"HighestAccuracy": 0.942616,
-				"ID": "model_fs1_r1_c3_a0baf66faf2bdd39d276c05b8471f219815a5ab89a6de3fecf2b9dbea8170574",
-				"Loss": 0.131221,
-				"Owner": "Org3MSP::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=UK/ST=Greater Manchester/L=Manchester/O=org3.example.com/CN=ca.org3.example.com",
-				"Round": 1,
-				"URL": "/ipfs/QmdR634jkG8wgg9URb161YWWiT3KRDsXw1PDjQHrHgsubU",
-				"docType": "localCheckpoint"
+				Algorithm: "BiLSTM",
+				CurAccuracy: 0.942616,
+				FedSession: 1,
+				Hash: "a0baf66faf2bdd39d276c05b8471f219815a5ab89a6de3fecf2b9dbea8170574",
+				HighestAccuracy: 0.942616,
+				ID: "model_fs1_r1_c3_a0baf66faf2bdd39d276c05b8471f219815a5ab89a6de3fecf2b9dbea8170574",
+				Loss: 0.131221,
+				Owner: "Org3MSP::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=UK/ST=Greater Manchester/L=Manchester/O=org3.example.com/CN=ca.org3.example.com",
+				Round: 1,
+				URL: "/ipfs/QmdR634jkG8wgg9URb161YWWiT3KRDsXw1PDjQHrHgsubU",
+				docType: "localCheckpoint",
 			},
 		];
 

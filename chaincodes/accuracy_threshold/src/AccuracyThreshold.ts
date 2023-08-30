@@ -15,7 +15,7 @@ export class AccuracyThreshold extends Contract {
 
     @Transaction()
     public async InitLedger(ctx: Context): Promise<void> {
-        if (ctx.clientIdentity.assertAttributeValue("verifier", "false")) {
+        if (!ctx.clientIdentity.assertAttributeValue("verifier", "true")) {
             throw Error(`Identity ${ctx.clientIdentity.getID()} is not authorised to perform this action!`)
         }
     
@@ -28,7 +28,7 @@ export class AccuracyThreshold extends Contract {
         const threshold: AccuracyT = {
                 ID: THRESHOLD_ID,
                 Requestor: this.GetOwnerNameFromCtx(ctx),
-                Threshold: 4
+                Threshold: 1
             }
 
         threshold.docType = 'accuracyT';
@@ -48,7 +48,7 @@ export class AccuracyThreshold extends Contract {
 
     @Transaction()
     public async UpdateThreshold(ctx: Context, threshold_val: number) {
-        if (ctx.clientIdentity.assertAttributeValue("verifier", "false")) {
+        if (!ctx.clientIdentity.assertAttributeValue("verifier", "true")) {
             throw Error(`Identity ${ctx.clientIdentity.getID()} is not authorised to perform this action!`)
         }
         
