@@ -28,7 +28,7 @@ export class AccuracyThreshold extends Contract {
         const threshold: AccuracyT = {
                 ID: THRESHOLD_ID,
                 Requestor: this.GetOwnerNameFromCtx(ctx),
-                Threshold: 1
+                Threshold: 4
             }
 
         threshold.docType = 'accuracyT';
