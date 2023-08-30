@@ -2,11 +2,14 @@ from data.loader import load_data
 from utils.saver import hash_params, save_params
 import os
 import models.net as net
+import numpy as np
 from strategy.BFedAvg import BFedAvg
 
 from client import BFLClient
 from bflcm import BFLClientManager
 from bflhistory import BFLHistory
+from plotter.plot import plot_time, plot_all
+import pickle
 
 
 import flwr as fl
@@ -24,7 +27,6 @@ from typing import List, Tuple
 
 from logging import INFO, ERROR
 import timeit
-
 
 SAVE_DIR = os.path.abspath('./model_ckpt/tmp/') if cfg.WORK_ENV == 'TEST' else os.path.abspath('./model_ckpt/')
 DATA_ROOT = os.path.abspath('./data/datasets')
@@ -59,6 +61,12 @@ class BFLServer(Server):
             exit(1)
 
         ipfs_client = ipfshttpclient.Client(f"/ip4/{associated_client_config['IPFS_HOST']}/tcp/{int(associated_client_config['IPFS_API_PORT'])}/http")
+        ipfs_id = dict(ipfs_client.id())
+        
+        s_target = associated_client_config["IPFS_SWARM_TARGET"]
+        if ipfs_id['Addresses'][0] != s_target:
+            log(f"Connecting to {s_target}")
+            ipfs_client.swarm.connect(s_target)
 
         # Get the latest checkpoint from the global checkpoint ledger
         client_name = "User1@" + associated_client_config["PEER_DOMAIN"]
@@ -71,7 +79,7 @@ class BFLServer(Server):
 
         # Initialize parameters
         log(INFO, "Initializing global parameters")
-        self.parameters = self._get_initial_parameters(timeout)
+        self.parameters = self._get_initial_parameters(timeout, ipfs_client)
         log(INFO, f"Waiting for enough cients to join ({self.strategy.min_available_clients})")
 
         self.client_manager().wait_for(self.strategy.min_available_clients)
@@ -106,7 +114,7 @@ class BFLServer(Server):
                     prefix = f"gmodel_fs{self.fed_session}_r{current_round}"
                     file_name = f"{prefix}.keras"
                     cid = save_params(os.path.join(self.temp_model_file_path, file_name), ipfs_client, self.model)
-                    self._post_global_round_model(current_round, self.parameters, f"/ipfs/{cid}", prefix, client_name, loss_fed, evaluate_metrics_fed["accuracy"])
+                    self._post_global_round_model(server_round=current_round, parameters=self.parameters, ipfs_url=f"/ipfs/{cid}", model_prefix=prefix, client_name=client_name, accuracy=evaluate_metrics_fed["accuracy"], loss=loss_fed)
 
         # Round finished, clear parameters from memory
         self.parameters = None
@@ -125,6 +133,7 @@ class BFLServer(Server):
         """Get initial parameters from one of the available clients."""
 
         if self.latest_checkpoint and self.ipfs_client:
+            log(INFO, "Retrieving parameters from the latest checkpoint")
             with open(self.temp_model_file_path, 'wb+') as f:
                 f.write(ipfs_client.cat(self.latest_checkpoint["URL"]))
                 f.flush()
@@ -217,20 +226,28 @@ strategy = BFedAvg(
 if __name__ == "__main__":
     print(f"Starting server at {cfg.S_ADDR}")
     if cfg.WORK_ENV == "TEST" or cfg.WORK_ENV == "SIM":
-        history = fl.simulation.start_simulation(
-            client_fn = client_fn,
-            clients_ids= [str(i) for i in range(1, cfg.NUM_CLIENTS + 1)],
-            strategy = strategy,
-            num_clients = cfg.NUM_CLIENTS,
-            server = BFLServer('1', "LSTM", SAVE_DIR, strategy=strategy, client_manager=BFLClientManager()),
-            config = fl.server.ServerConfig(num_rounds=cfg.NUM_ROUNDS),
-            client_resources=None,
-        )
-        print(history)
+        histories = []
+        for i in range(cfg.NUM_RUNS):
+            histories.append(fl.simulation.start_simulation(
+                client_fn = client_fn,
+                clients_ids= [str(i) for i in range(1, cfg.NUM_CLIENTS + 1)],
+                strategy = strategy,
+                num_clients = cfg.NUM_CLIENTS,
+                server = BFLServer('1', "BiLSTM", SAVE_DIR, strategy=strategy, client_manager=BFLClientManager()),
+                config = fl.server.ServerConfig(num_rounds=cfg.NUM_ROUNDS),
+                client_resources=None,
+            ))
+        
+        with open(f"./plotter/histories/hist_2", 'wb') as f:
+            pickle.dump(histories, f)
+            f.close()
+        plot_all(histories, cfg.NUM_ROUNDS)
+        times = np.array([history.elapsed for history in histories])
+        plot_time(times, cfg.NUM_RUNS)
     elif cfg.WORK_ENV == "PROD":
         fl.server.start_server(
             server_address=cfg.S_ADDR,
-            server=BFLServer('1', "LSTM", strategy=strategy, client_manager=BFLClientManager()),
+            server=BFLServer('1', "BiLSTM", strategy=strategy, client_manager=BFLClientManager()),
             strategy=strategy, 
             config=fl.server.ServerConfig(num_rounds=cfg.NUM_ROUNDS),
         )

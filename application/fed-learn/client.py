@@ -73,7 +73,7 @@ class BFLClient(fl.client.NumPyClient):
         epoch = config.get('epoch') or 20
 
         with tf.device('/device:gpu:0'):
-            self.model.fit(self.x_train, self.y_train, epochs=epoch, batch_size=batch_size, callbacks=[Callback(self.cid)], verbose=0, shuffle=False)
+            self.model.fit(self.x_train, self.y_train, epochs=epoch, batch_size=batch_size, callbacks=[Callback(self.cid)], verbose=0)
 
         loss, accuracy, _, _ = self.model.evaluate(self.x_test, self.y_test, callbacks=[Callback(self.cid)], verbose=0)
         
@@ -99,7 +99,7 @@ class BFLClient(fl.client.NumPyClient):
             hash=hash,
             url=resource_url,
             fed_round=server_round,
-            algorithm="LSTM",
+            algorithm="BiLSTM",
             accuracy=accuracy,
             loss=loss,
             fed_session=fed_session,
@@ -115,7 +115,7 @@ class BFLClient(fl.client.NumPyClient):
 
     def evaluate(self, parameters, config):
         self.model.set_weights(parameters)
-        loss, accuracy, specificity, sensitivity = self.model.evaluate(self.x_test, self.y_test, batch_size=100, callbacks=[Callback(self.cid)], verbose=0)
+        loss, accuracy, specificity, sensitivity = self.model.evaluate(self.x_test, self.y_test, batch_size=100, verbose=0)
 
         self._log(f"Round {config['server_round']} - Aggregated Evaluation - Loss: {loss:.6f} - Accuracy: {accuracy:.6f}")
 

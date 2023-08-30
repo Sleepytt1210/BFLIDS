@@ -14,10 +14,7 @@ def csvfile(root_dir, train):
 
 def load_data(path: str, num_clients: int, cid: int) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Load UNSW-NB15 (training and test set)."""
-    print("Loading training set from", path)
     train_set = pd.read_csv(csvfile(path, True))
-    print("Done loading training set")
-    print("Loading testing set from", path)
     test_set = pd.read_csv(csvfile(path, False))
 
     # Combine the train and test set into one
@@ -26,10 +23,11 @@ def load_data(path: str, num_clients: int, cid: int) -> Tuple[pd.DataFrame, pd.D
 
     # Partition data based on client id (Assume 5 clients => cid [0 ... 4])
     X_train, X_test, y_train, y_test = partition(num_clients=num_clients, cid=cid, df=df)
-    X_train_array = np.array(X_train)
-    X_train_reshaped = X_train_array.reshape(X_train_array.shape[0], 1, 56)
-    X_test_array = np.array(X_test)
-    X_test_reshaped = X_test_array.reshape(X_test.shape[0], 1, 56)
+    X_train_array = np.array(X_train).astype('float32')
+    X_train_reshaped = X_train_array.reshape(X_train_array.shape[0], 1, 196)
+    X_test_array = np.array(X_test).astype('float32')
+    X_test_reshaped = X_test_array.reshape(X_test.shape[0], 1, 196)
+    print("Done loading dataset")
     return X_train_reshaped, X_test_reshaped, y_train, y_test
 
 
@@ -38,13 +36,13 @@ def get_part(num_clients: int, cid: int, df: pd.DataFrame | np.ndarray):
     offset = int(n * 0.25)  # Data will have a 25% offset from start and
     start = (cid - 1) * offset
     end = n - (offset * int(num_clients - cid))
-    return df[start:, :] if cid == num_clients else df[start:end, :]
+    return df.iloc[start:, :] if cid == num_clients else df.iloc[start:end, :]
 
 
 def partition(num_clients: int, cid: int, df: pd.DataFrame):
     part = get_part(num_clients, cid, df)
-    y = part[:, -1]
-    X = part[:, :-1]
+    y = part['label']
+    X = part.drop(['label'], axis=1)
     return train_test_split(X, y, random_state=42, test_size=0.3, stratify=y)
 
 # Select numeric categories
@@ -53,7 +51,6 @@ def partition(num_clients: int, cid: int, df: pd.DataFrame):
 def rm_outliers(df_in: pd.DataFrame):
     result = df_in.copy()
     df_numeric = df_in.select_dtypes(include=[np.number])
-    df_numeric.describe(include='all')
 
     # Remove outliers
     for feature in df_numeric.columns:
@@ -73,16 +70,21 @@ def reduce_labels(df_in: pd.DataFrame):
     return df_in
 
 
-# One hot encoding
-def onehot(df_in: pd.DataFrame):
-    ct = ColumnTransformer(
-        [('onehot', OneHotEncoder(), [1, 2, 3])], remainder='passthrough')
-    return np.array(ct.fit_transform(df_in))
+#One-hot encoding
+def one_hot(df, cols):
+    """
+    @param df pandas DataFrame
+    @param cols a list of columns to encode
+    @return a DataFrame with one-hot encoding
+    """
+    for each in cols:
+        dummies = pd.get_dummies(df[each], prefix=each, drop_first=False)
+        df = pd.concat([df, dummies], axis=1)
+        df = df.drop(each, axis=1)
+    return df
 
 # Normalise
 # Function to min-max normalize
-
-
 def normalize(df_in: pd.DataFrame, cols):
     """
     @param df pandas DataFrame
@@ -100,15 +102,16 @@ def normalize(df_in: pd.DataFrame, cols):
 
 
 def preprocess(df_in: pd.DataFrame):
-    df_in = df_in.drop(['id', 'attack_cat'], axis=1)
+    df_in.drop(['id', 'attack_cat'], axis=1, inplace=True)
     df_in = rm_outliers(df_in)
-    df_in = reduce_labels(df_in)
     df_in = normalize(df_in, df_in.select_dtypes(include=[np.number]).columns)
-    return onehot(df_in)
+    return one_hot(df_in, ['proto', 'service', 'state'])
 
 if __name__ == '__main__':
     DATA_ROOT = path.abspath('./data/datasets')
     train_df = pd.read_csv(csvfile(DATA_ROOT, True))
     test_df = pd.read_csv(csvfile(DATA_ROOT, False))
     df = pd.concat([train_df, test_df])
-    preprocess(df)
+    df.drop(['id', 'attack_cat'], axis=1, inplace=True)
+    preproc = preprocess(df)
+    print(len(partition(3, 1, preproc)))
