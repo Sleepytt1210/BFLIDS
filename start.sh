@@ -3,7 +3,7 @@
 . network/scripts/utils.sh
 
 function checkPrerequisites(){
-    declare -A commands=(
+    declare -a commands=(
         docker
         ipfs
         python
