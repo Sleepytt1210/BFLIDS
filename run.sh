@@ -7,7 +7,7 @@ function asOrg() {
     ORDERER_CA=${PWD}/network/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
     PEER0_ORG_CA=${PWD}/network/organizations/peerOrganizations/${1}.example.com/tlsca/tlsca.${1}.example.com-cert.pem
     CORE_PEER_LOCALMSPID=${1^}MSP
-    CORE_PEER_MSPCONFIGPATH=${PWD}/network/organizations/peerOrganizations/${1}.example.com/users/Admin@${1}.example.com/msp
+    CORE_PEER_MSPCONFIGPATH=${PWD}/network/organizations/peerOrganizations/${1}.example.com/users/User1@${1}.example.com/msp
     case "${1}" in
         org1 )
             CORE_PEER_ADDRESS=localhost:7051
@@ -104,7 +104,7 @@ function printHelp() {
     println "    -u <org_name>          Organization name (e.g. org1, org2...)." 
     println "    -a <args>              Arguments to be passed into a function, put an empty string if None." 
     println "    -h                     Print this help message."
-    println "  Example: `basename ${0}` invoke -g checkpoints -c GlobalLearningContract -f CreateCheckpoint -u org1 -a \"model_fs2_r1_0059f56e5034c19183adecdb2cfa9541a72022937b10e4376610ede911f6243f, 0059f56e5034c19183adecdb2cfa9541a72022937b10e4376610ede911f6243f, /ipfs/Qmex9gWyogEeGaXFEZmLWKrM67EqnUry6zQAW6f85qaV35, org1.example.com, BiLSTM, 93.7, 0.1003, 1, 2\""
+    println "  Example: `basename ${0}` invoke -g checkpoints -c GlobalLearningContract -f CreateCheckpoint -u org1 -a \"model_fs2_r1_0059f56e5034c19183adecdb2cfa9541a72022937b10e4376610ede911f6243f, 0059f56e5034c19183adecdb2cfa9541a72022937b10e4376610ede911f6243f, /ipfs/Qmex9gWyogEeGaXFEZmLWKrM67EqnUry6zQAW6f85qaV35, BiLSTM, 93.7, 0.1003, 1, 2\""
 }
 
 function println() {
