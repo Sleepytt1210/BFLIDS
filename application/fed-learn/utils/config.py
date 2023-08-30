@@ -30,6 +30,7 @@ S_ADDR = f'{S_HOST}:{S_PORT}'
 
 NUM_CLIENTS = int(os.environ['NUM_CLIENTS'])
 NUM_ROUNDS = int(env_def('NUM_ROUNDS', 1))
+NUM_RUNS = int(env_def('NUM_RUNS', 10))
 
 EXPRESS_HOST = env_def("EXPRESS_HOST", "0.0.0.0")
 EXPRESS_PORT = env_def("EXPRESS_PORT", 30027)
